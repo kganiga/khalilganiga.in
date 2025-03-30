@@ -42,7 +42,7 @@ const RelatedPosts = ({ tags, currentSlug }: RelatedPostsProps) => {
           <li key={item.slug} className="mb-2 flex items-center">
             <span className="mr-2 text-gray-700 dark:text-gray-300">{index + 1}.</span>
             <Link
-              href={`/${item.type === 'blog' ? 'blog' : 'stories'}/${item.slug}`}
+              href={`/${item.type.toLowerCase() === 'blog' ? 'blog' : 'stories'}/${item.slug}`}
               className="hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center rounded-md px-4 py-3.5 text-primary-500 dark:text-primary-400"
             >
               {item.title}
