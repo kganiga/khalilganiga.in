@@ -1,18 +1,19 @@
 ---
 title: How AI Helped Me in Unit Testing with Test Data Generation
 date: '2024-05-09'
-tags: ['AI','Programming','Developer Tools','How To']
+tags: ['AI', 'Programming', 'Developer Tools', 'How To']
 draft: false
 summary: Explore how artificial intelligence like ChatGPT can be a helpful friend in making software development and testing simpler and faster.
 images: ['https://freeimghost.net/images/2024/05/09/Designer.png']
 layout: PostLayout
 isfeatured: false
 ---
+
 As developers, we often find ourselves in need of generating large sets of test data to ensure our implementations are robust and error-free. The task can be tedious and time-consuming, especially when the data needs to be random and unique. However, I recently discovered a surprisingly efficient solution to this problem through an unexpected source: ChatGPT.
 
 ### The Challenge: Generating Massive Test Data
 
-I had just finished working on an implementation that required extensive testing. To test the functionality effectively, I needed to create 200 records of test data, each with a unique and random friendly-id and id. The pattern I needed was specific: ```<p friendly-id="doc_test_0" id="xc_pt_qw"/>```. Manually creating such a dataset would have been a daunting task, and I was looking for a way to save time and automate the process.
+I had just finished working on an implementation that required extensive testing. To test the functionality effectively, I needed to create 200 records of test data, each with a unique and random friendly-id and id. The pattern I needed was specific: `<p friendly-id="doc_test_0" id="xc_pt_qw"/>`. Manually creating such a dataset would have been a daunting task, and I was looking for a way to save time and automate the process.
 
 ### The Ask: A Simple Request to ChatGPT
 
@@ -24,17 +25,17 @@ Instead of simply providing the data, ChatGPT supplied me with a JavaScript func
 
 ```javascript
 function generateRandomTags(count) {
-  const tags = [];
+  const tags = []
   for (let i = 0; i < count; i++) {
-    const friendlyId = `doc_test_${Math.floor(Math.random() * 10000)}`;
-    const id = `${Math.random().toString(36).substring(2, 6)}_${Math.random().toString(36).substring(2, 6)}_${Math.random().toString(36).substring(2, 6)}`;
-    tags.push(`<p friendly-id="${friendlyId}" id="${id}"></p>`);
+    const friendlyId = `doc_test_${Math.floor(Math.random() * 10000)}`
+    const id = `${Math.random().toString(36).substring(2, 6)}_${Math.random().toString(36).substring(2, 6)}_${Math.random().toString(36).substring(2, 6)}`
+    tags.push(`<p friendly-id="${friendlyId}" id="${id}"></p>`)
   }
-  return tags.join('\n');
+  return tags.join('\n')
 }
 ```
 
-With this function, I could generate any number of `<p>` tags with random and unique friendly-id and id attributes. The friendly-id would start with "doc_test_" followed by a random number, and the id would be a random alphanumeric string separated by underscores.
+With this function, I could generate any number of `<p>` tags with random and unique friendly-id and id attributes. The friendly-id would start with "doc*test*" followed by a random number, and the id would be a random alphanumeric string separated by underscores.
 
 ### The Outcome: Instant Test Data Generation
 

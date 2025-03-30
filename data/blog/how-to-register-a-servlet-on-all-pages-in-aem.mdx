@@ -1,23 +1,25 @@
 ---
 title: How to register a servlet on all pages in AEM
 date: '2023-03-11'
-tags: ['AEM','How To','Programming','Code']
+tags: ['AEM', 'How To', 'Programming', 'Code']
 draft: false
 summary: Learn how to register/invoke a servlet on all pages of AEM.
 images: []
 layout: PostLayout
 isfeatured: false
 ---
+
 Recently I came across a usecase, where a servlet is getting invoked on all pages(including OOTB pages) of our AEM instances. I checked the source code for the implementation to see how its developed.
 
-**Solution:** 
-The servlet was registered with resourceType:  **cq/Page** so that Servlet is registered for every Page.
+**Solution:**
+The servlet was registered with resourceType: **cq/Page** so that Servlet is registered for every Page.
 
 With the use of a particular selector we can get results like list information/required custom information for every AEM page and display either via component with its ajax request has a url of Current Page. Selector which invokes the Servlet and renders result .
 
 **Note**: – Just for reference Sling resolves on basis of Primary Type example `cq:Page` for Page and `dam:Asset` for Dam in case `sling:resourceType` is missing .
 
 **Code Snippet**
+
 ```java
 
     import java.io.IOException;
@@ -27,23 +29,22 @@ With the use of a particular selector we can get results like list information/r
     import org.apache.sling.api.SlingHttpServletResponse;
     import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
     import org.osgi.service.component.annotations.Component;
-    
+
     @Component(service = Servlet.class, property = { "sling.servlet.resourceTypes=" + "cq/Page",
     		"sling.servlet.extensions=" + "json", "sling.servlet.selectors=" + "result", "service.ranking=" + "50000" })
     public class SampleServlet extends SlingSafeMethodsServlet {
-    
+
     	/**
-    	 * 
+    	 *
     	 */
     	private static final long serialVersionUID = 1L;
-    
+
     	@Override
     	protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response)
     			throws ServletException, IOException {
     		//Implement your logic
     	}
-    
+
     }
 
 ```
-

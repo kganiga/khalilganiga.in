@@ -1,13 +1,14 @@
 ---
 title: Understanding the Page Visibility API
 date: '2024-05-18'
-tags: ['Programming','Tools','API','Tutorials']
+tags: ['Programming', 'Tools', 'API', 'Tutorials']
 draft: false
-summary: Learn more about the Page Visibility API and its usefulness across different applications by monitoring whether a page is visible or hidden. 
+summary: Learn more about the Page Visibility API and its usefulness across different applications by monitoring whether a page is visible or hidden.
 images: ['https://freeimghost.net/images/2024/05/18/page-visibility-api.png']
 layout: PostLayout
 isfeatured: false
 ---
+
 Recently, I was working on a project where I needed to show a popup before someone closed a tab or window in their web browser. While looking for a solution, I found something cool called the **Page Visibility** API. This API helps you see how people are using your web pages and gives hints about how your web app is doing. It lets you know if a page is visible or not, and you can set it up to do things when that changes.
 
 ![page-visibility-api](https://freeimghost.net/images/2024/05/18/page-visibility-api.png)
@@ -26,7 +27,9 @@ In real situations, it's easier to use the `visibilitychange` event. This way, y
     document.addEventListener("visibilitychange", (event) => {
       // doSomething();
     });
+
 When the state changes, you can check the page visibility and then do something depending on the result:
+
 ```
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
@@ -36,27 +39,30 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 ```
+
 It's important to mention that there isn't a `document.visible` property. So, if you're specifically interested in that state, you can check if `document.visibilityState` equals "visible" (or if `!document.hidden` is true)
 
-Page visibility is useful in many ways, with common applications including analytics, resource management, and enhancing user experience (UX) across different devices. 
+Page visibility is useful in many ways, with common applications including analytics, resource management, and enhancing user experience (UX) across different devices.
 
 Let's explore each of these applications further.
 
- - **In Analytics:**
-		 In analytics, it's typical to log when pages switch from being visible to hidden. This transition to a hidden state might signify the conclusion of a user's session, as it could be the final observable event on a page. However, the interpretation of a session can differ; some might define it based on a set period of user inactivity rather than just the first instance of a page being hidden. Hence, this application varies depending on individual requirements.
+- **In Analytics:**
+  In analytics, it's typical to log when pages switch from being visible to hidden. This transition to a hidden state might signify the conclusion of a user's session, as it could be the final observable event on a page. However, the interpretation of a session can differ; some might define it based on a set period of user inactivity rather than just the first instance of a page being hidden. Hence, this application varies depending on individual requirements.
 
-   ``` document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") {
-        navigator.sendBeacon("/log", analyticsData);
-      }
-    };```
-    
+  ````document.addEventListener("visibilitychange", () => {
+     if (document.visibilityState === "hidden") {
+       navigator.sendBeacon("/log", analyticsData);
+     }
+   };```
 
- - **Resource Management**
-		The ability to detect page visibility enables us to optimize resource usage by halting processes when the user is not viewing the page. This capability empowers us to manage client or server resources more efficiently. Browsers aid in this process through features like tab unloading and background tab optimization. By integrating resource management checks into web application development, we can proactively enhance performance and efficiency. For instance, we can utilize smaller bitrate videos, throttle network activity during real-time communication, and optimize IndexedDB processes. Additional information on browser handling of background page performance can be found in the "Policies in place to aid background page performance" section of the Page Visibility API documentation.
 
- - **Improving user experience**
- When the page changes from `hidden` to `visible`, we could assume that a 	visitor has returned to our page, so we can restart anything that we may have paused when the page was hidden. However, there are a few logical traps, especially concerning media, that you could fall into. Therefore, you need to be careful when resuming actions in such cases. We'll look at examples of this in detail in the next section.
+  ````
+
+- **Resource Management**
+  The ability to detect page visibility enables us to optimize resource usage by halting processes when the user is not viewing the page. This capability empowers us to manage client or server resources more efficiently. Browsers aid in this process through features like tab unloading and background tab optimization. By integrating resource management checks into web application development, we can proactively enhance performance and efficiency. For instance, we can utilize smaller bitrate videos, throttle network activity during real-time communication, and optimize IndexedDB processes. Additional information on browser handling of background page performance can be found in the "Policies in place to aid background page performance" section of the Page Visibility API documentation.
+
+- **Improving user experience**
+  When the page changes from `hidden` to `visible`, we could assume that a visitor has returned to our page, so we can restart anything that we may have paused when the page was hidden. However, there are a few logical traps, especially concerning media, that you could fall into. Therefore, you need to be careful when resuming actions in such cases. We'll look at examples of this in detail in the next section.
 
 **Common pitfalls when implementing page visibility checks**
 It's crucial to prioritize user control over media playback on web pages, ensuring visitors can start, resume, and skip media as they prefer. Caution is advised when utilizing the Page Visibility API to maintain user agency during browsing. Automatic pausing of media when a page is hidden should not be assumed as desired by visitors. Providing user preferences or opt-in functionality for such features is strongly recommended.
@@ -68,6 +74,7 @@ Regarding the code snippet previously available on the MDN visibilitychange page
   controls
   src="https://mdn.github.io/webaudio-examples/audio-basics/outfoxing.mp3"></audio>
 ```
+
 ```
 const audio = document.querySelector("audio");
 
@@ -79,18 +86,19 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 ```
-In the HTML, there is an  `<audio>`  element with controls visible so the user can start and stop the media. In JavaScript, we're looking at the  `visibilitychange`  event and doing the following:
 
--   If the page is hidden, pause the audio.
--   If the page is shown, play the audio.
+In the HTML, there is an `<audio>` element with controls visible so the user can start and stop the media. In JavaScript, we're looking at the `visibilitychange` event and doing the following:
 
-This sounds reasonable at first, but we encounter issues such as audio autoplaying when the user switches to another tab and back again or when restoring a browser window after it's been minimized. The point is that page visibility may toggle between  `hidden`  and  `visible`  without the user ever interacting with the  `<audio>`  element.
+- If the page is hidden, pause the audio.
+- If the page is shown, play the audio.
 
-This situation becomes even more surprising and distracting if the  `<audio>`  element is located below the page fold and is not visible when the page loads. You might unintentionally prompt your users to search for tabs where audio is playing and lead them to a place where it's not obvious what is playing, which can be extremely frustrating.
+This sounds reasonable at first, but we encounter issues such as audio autoplaying when the user switches to another tab and back again or when restoring a browser window after it's been minimized. The point is that page visibility may toggle between `hidden` and `visible` without the user ever interacting with the `<audio>` element.
 
-To avoid usability issues, it's always a good idea to see if people have interacted with the media before resuming playback. One way of doing this is to store the state of the audio player when the page is hidden. When the page visibility changes to  `visible`  again, we resume media playback  _only if it was playing when the page was hidden_.
+This situation becomes even more surprising and distracting if the `<audio>` element is located below the page fold and is not visible when the page loads. You might unintentionally prompt your users to search for tabs where audio is playing and lead them to a place where it's not obvious what is playing, which can be extremely frustrating.
 
-Let's modify the event listener to store the audio state on page hide. A boolean  `playingOnHide`  variable is sufficient for this purpose; we can set it when the document's visibility changes to  `hidden`:
+To avoid usability issues, it's always a good idea to see if people have interacted with the media before resuming playback. One way of doing this is to store the state of the audio player when the page is hidden. When the page visibility changes to `visible` again, we resume media playback _only if it was playing when the page was hidden_.
+
+Let's modify the event listener to store the audio state on page hide. A boolean `playingOnHide` variable is sufficient for this purpose; we can set it when the document's visibility changes to `hidden`:
 
 ```
 // Initialize as false; we're not auto playing audio when the page loads
@@ -105,6 +113,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 ```
+
 As with `document.hidden`, there is no `audio.playing` state, so we have to check `!audio.paused` (not paused) instead. That means the `playingOnHide` Boolean can be set to whatever the value of `!audio.paused` is on page hide, and we're pretty much done. The only other state the visibility of the page can be is `visible`, so in the `else` statement, we handle the playing logic:
 
 ```
@@ -124,11 +133,13 @@ document.addEventListener("visibilitychange", () => {
 ```
 
 The finished code looks like this with a neat little gate for checking the audio state on page hide:
+
 ```
 <audio
   controls
   src="https://mdn.github.io/webaudio-examples/audio-basics/outfoxing.mp3"></audio>
 ```
+
 ```
 const audio = document.querySelector("audio");
 
@@ -145,10 +156,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 ```
+
 That's it for today.
 
 Happy reading.!
-
-	
-
-

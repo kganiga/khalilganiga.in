@@ -202,7 +202,6 @@ export const PrivacyPolicy = defineDocumentType(() => ({
   },
 }))
 
-
 export const Authors = defineDocumentType(() => ({
   name: 'Authors',
   filePathPattern: 'authors/**/*.mdx',
@@ -223,7 +222,7 @@ export const Authors = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: 'data',
-  documentTypes: [Blog, Authors,Story, PrivacyPolicy],
+  documentTypes: [Blog, Authors, Story, PrivacyPolicy],
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [

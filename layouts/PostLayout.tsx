@@ -9,7 +9,6 @@ import Image from '@/components/Image'
 import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
-import SocialShare from '@/components/SocialShare'
 import RelatedPosts from '@/components/RelatedPosts'
 
 const editUrl = (path) => `${siteMetadata.siteRepo}/blob/main/data/${path}`

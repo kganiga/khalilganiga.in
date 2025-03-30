@@ -12,7 +12,11 @@ import {
 } from 'react-icons/fa'
 
 const socialLinks = [
-  { href: siteMetadata.email ? `mailto:${siteMetadata.email}` : '', icon: FaEnvelope, title: 'Email' },
+  {
+    href: siteMetadata.email ? `mailto:${siteMetadata.email}` : '',
+    icon: FaEnvelope,
+    title: 'Email',
+  },
   { href: siteMetadata.facebook, icon: FaFacebook, title: 'Facebook' },
   { href: siteMetadata.instagram, icon: FaInstagram, title: 'Instagram' },
   { href: siteMetadata.twitter, icon: FaTwitter, title: 'Twitter' },

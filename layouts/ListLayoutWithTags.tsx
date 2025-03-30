@@ -30,7 +30,6 @@ function Pagination({ totalPages, currentPage }: PaginationProps) {
   const nextPage = currentPage + 1 <= totalPages
 
   return (
-    
     <nav className="flex items-center justify-between py-8">
       {!prevPage && (
         <button className="text-sm text-gray-400 dark:text-gray-400" disabled={!prevPage}>

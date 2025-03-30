@@ -18,12 +18,12 @@ const MAX_FEATURED_STORIES = 5
 
 export default function Home({ posts }) {
   const tagCounts = tagData as Record<string, number>
-  let sortedStories = allStories
+  const sortedStories = allStories
     .slice()
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-  const featuredStories = sortedStories.filter((story) => story.isFeatured)
-  const remainingStories = sortedStories.filter((story) => !story.isFeatured)
+  const featuredStories = sortedStories.filter((story) => story.isfeatured)
+  const remainingStories = sortedStories.filter((story) => !story.isfeatured)
   const finalStories = [...featuredStories, ...remainingStories].slice(0, MAX_FEATURED_STORIES)
 
   return (

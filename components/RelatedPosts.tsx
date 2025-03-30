@@ -37,13 +37,13 @@ const RelatedPosts = ({ tags, currentSlug }: RelatedPostsProps) => {
         You might also like to read
       </h2>
 
-      <ul className="max-w mx-auto mt-8 divide-y divide-gray-200 dark:divide-gray-700 text-left text-lg font-medium leading-none">
+      <ul className="max-w mx-auto mt-8 divide-y divide-gray-200 text-left text-lg font-medium leading-none dark:divide-gray-700">
         {relatedContent.map((item, index) => (
           <li key={item.slug} className="mb-2 flex items-center">
             <span className="mr-2 text-gray-700 dark:text-gray-300">{index + 1}.</span>
             <Link
               href={`/${item.type.toLowerCase() === 'blog' ? 'blog' : 'stories'}/${item.slug}`}
-              className="hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center rounded-md px-4 py-3.5 text-primary-500 dark:text-primary-400"
+              className="flex items-center rounded-md px-4 py-3.5 text-primary-500 hover:bg-gray-100 dark:text-primary-400 dark:hover:bg-gray-800"
             >
               {item.title}
             </Link>
