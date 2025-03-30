@@ -1,0 +1,54 @@
+---
+title: Oh my for loop
+date: '2022-08-21'
+tags: ['Programming', 'How To', 'Guides', 'Code']
+draft: false
+summary: Learn how to write a optimized version of for loop.
+images: []
+layout: PostLayout
+---
+
+In one of my interview, I have been asked this question which is a simple and basic question.
+
+**write a function that prints all the odd numbers up to 20.**
+
+Isn't it simple.
+
+Any noobie can tell that, this can be done using a simple `for` loop and starts writing like
+
+```javascript
+for (int i = 0; i <= 20; i++) {
+    if (i % 2 === 1) {
+        console.log(i)
+    }
+}
+```
+
+In simple english,we run a loop for 20 iterations, during each iteration of the loop we check to see if the value of a variable i is odd and if it is we print it to the console.
+The above function satisfies the requirements. If you run it in your console, you will see it does the job.
+
+Now the question is,**How can you optimize this?**
+
+**Why & How ?**
+
+P.S. JavaScript For Loop documentation
+
+`for` loop takes as an argument three statements separated by \;’s. Let's have a look on our function.
+
+The first statement is an expression that is run only one time, before the forloop gets executed. It's usually used to initialize a counter, but you can put any valid JavaScript expression, or none at all (for example, if you already initialized your counter outside of the for loop). In the example above, the first statement defines a variable `i` and sets its value to `0`.
+
+The second statement is a conditional which gets evaluated before each iteration of the loop. As long as the conditional evaluates to true the loop keeps running. Once conditions change so that the second statement evaluates to false, we break out of the loop. In our example, the conditional is `i < 20` so the loop runs as long as the value of `i` remains below `20`.
+
+The third statement is another expression. This expression is run after every iteration of the loop. It's usually used to increment the counter, but again, you can put any legal JavaScript in there, and it will run (of course, if you aren’t using it to increment a counter you need to make sure you have another way of changing your conditional in the second statement to true, otherwise you will be stuck with a dreaded infinite loop).
+
+**How to do better**
+
+Have a look at below function
+
+```JavaScript
+for (var i = 1; i <= 20; i += 2) {
+    console.log(i)
+}
+```
+
+I hope this post inspired you to sometimes delve a little deeper, even into concepts that `everyone knows`.

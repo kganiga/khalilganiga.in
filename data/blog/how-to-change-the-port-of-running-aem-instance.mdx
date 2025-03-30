@@ -1,0 +1,30 @@
+---
+title: How to change the port of a running AEM instance
+date: '2023-12-08'
+tags: ['AEM', 'How To', 'Tutorials']
+draft: false
+summary: Find out how to make your AEM system safer by learning how to switch the port it runs on. Explore AEM settings to change the port.
+images: [/static/posts/images/how-to-change-port-of-a-running-aem-instance.png]
+layout: PostLayout
+isfeatured: false
+---
+
+In production setups, we access `AEM` instances through web servers, typically the Apache web server. The Dispatcher module, situated on Apache, facilitates communication with the AEM server.
+
+From an end-user perspective, the existence or specific port of the AEM server is doesn't matter. However, for potential hackers, identifying vulnerabilities tied to the server's port could be serious threat. Exploiting such vulnerabilities could lead to significant security issues by gaining unauthorized access to the server through its port.
+
+It is always recommended that the default port should be changed to enhance application security. While the default port remains unchanged, the risk exists that hackers may discover this information. In such cases, altering the port becomes essential for a secure production system. Traditional methods of changing the port often involve downtime, which can have severe consequences. What if it is an e-Commerce site and shutting down the server means the loss of customers which implies the loss of business?
+
+### How to fix this situation?
+
+We know that AEM utilizes Jetty as its application server. Jetty is bundled within the AEM JAR file, making it the default server when running AEM using the JAR file.
+
+AEM provides options to configure Jetty parameters. This can be done by navigating to [http://localhost:4502/system/console/configMgr/org.apache.felix.http](http://localhost:4502/system/console/configMgr/org.apache.felix.http)
+
+![how-to-change-port-of-a-running-aem-instance](/static/posts/images/how-to-change-port-of-a-running-aem-instance.png)
+
+**Modify HTTP Port Configuration:** Locate the HTTP Port configuration and change its default value to the desired new port number. Save the changes.
+
+**Verification:** After saving the configuration, AEM will start running on the new port. To confirm the successful configuration, reload the page. The original port should no longer open the page. Access the page using the new port specified in the configuration to confirm that AEM is running on the updated port.
+
+Even after restarting the AEM instance, the updated port configuration will persist.

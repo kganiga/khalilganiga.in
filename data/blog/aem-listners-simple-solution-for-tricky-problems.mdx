@@ -1,0 +1,47 @@
+---
+title: AEM Event Listners - Simple Solution For Tricky Problems
+date: '2024-03-13'
+tags: ['AEM','Programming','How To']
+draft: true
+summary: In this blogpost, I talk about problem with event listeners and share a an easy fix to solve.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+In the world of software development, challenges are inevitable. Recently, I encountered a particularly tricky implementation scenario that required a unique solution. In this blog post, I'll share the details of the problem I faced and the creative solution I devised to overcome it.
+
+### The Scenario:
+
+In our application, we have a service implementation class housing a method responsible for processing data and triggering notifications based on a notification flag passed as a method parameter. This service method is a critical part of various operations, including asset and asset properties creation, updating, and removal events. To capture these events, we implemented an event listener.
+
+### The Challenge:
+
+A new requirement emerged: bulk updates on assets needed to be performed, but during this bulk update process, the service method should refrain from triggering any notifications. My initial approach was to introduce a flag before starting the bulk update and remove it afterward. However, this seemingly straightforward solution posed unexpected complications.
+
+During the bulk update process, property-modified event listeners were still being triggered. To prevent notification triggers, I added a condition to check for the presence of the flag in the event listener. Unfortunately, this approach failed, as the removal of the flag also triggered a property change event, causing notifications to be triggered again.
+
+### The Solution:
+
+Faced with a puzzling dilemma, I explored alternative approaches to achieve the desired outcome. Eventually, I devised a solution that involved creating temporary nodes under the 'var' folder with asset details before initiating the bulk update. These temporary nodes acted as markers, indicating whether the bulk update process was in progress.
+
+**Here's a step-by-step breakdown of the new solution:**
+
+Before Bulk Update:
+
+- Create a temporary node under the 'var' folder with the details of the assets undergoing the bulk update.
+
+During Property Update:
+
+- Check if the temporary node is present.
+- If the temporary node is present, refrain from triggering notifications.
+- If the temporary node is absent, proceed with sending notifications.
+
+After Bulk Update:
+
+- Remove the temporary nodes created before the bulk update.
+
+This refined approach effectively addressed the issue, ensuring that notifications were only triggered when the system was not in the midst of a bulk update. By leveraging the presence of temporary nodes, the solution offered a clear and concise way to manage the complex interaction between bulk updates and notification triggers.
+
+### Conclusion:
+
+In the realm of software development, challenges often demand creative thinking and innovative solutions. The experience of overcoming the hurdles in this tricky implementation not only expanded my problem-solving skills but also highlighted the importance of adaptability and persistence in the face of unforeseen complications. As developers, embracing such challenges and finding unique solutions is an integral part of our journey toward building robust and efficient software systems.

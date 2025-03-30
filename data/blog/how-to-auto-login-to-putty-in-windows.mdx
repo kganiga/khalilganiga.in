@@ -1,0 +1,35 @@
+---
+title: How to auto login to PuTTY in Windows
+date: '2022-07-04'
+tags: ['How To','Java','Programming']
+draft: false
+summary: Learn how to store your PuTTY session information so that you don't enter username and password everytime you log in.
+images: [/static/posts/images/windows-shortcut.png]
+layout: PostLayout
+canonicalUrl:
+---
+
+In this gudie I will show you how to create a Windows shortcut , which will store PuTTY session information so that you don't have to enter the username and password every time you login.
+
+If you haven't installed PuTTY, you can download it from from [putty.org](https://putty.org)
+
+### Create a Windows shortcut
+
+Begin by creating a Windows shortcut
+
+- Right click on the Desktop and select News and Shortcut.
+  ![window shortcut](/static/posts/images/windows-shortcut.png)
+- Click browse and navigate to the PuTTY folder.It’s usually located in `C:\Program Files\PuTTY` or `C:\Program Files (x86)\PuTTY`
+- Select putty.exe, click OK and Next.Enter a name for you shortcut.
+  e.g. LinuxServer and click Finish.
+- Right-click on your new shortcut and click Properties.
+  Take note of the Target field. It shows the path to putty.exe in Program Files.
+  ![shortcut-properties](/static/posts/images/shortcut-properties.png)
+
+- After the double quotes, paste in the following
+  `user@server.com -pw password` \
+  Replace user with username, server.com with your server address and password with your server password.
+
+Click OK and you’re done!
+
+Now when you double-click the shortcut it will bring you straight into your Linux server without having to enter username or password.

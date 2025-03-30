@@ -1,0 +1,84 @@
+---
+title: Unveiling the Power of Java Bytecode - A User Friendly Decompiler tool by Khalil
+date: '2023-12-12'
+tags: ['Utilities', 'Java', 'Programming', 'Tutorials']
+draft: false
+summary: A java utility to convert Java bytecode to readable code seamlessly through a user-friendly graphical interface, simplifying code analysis and comprehension
+images: [/static/posts/images/java-decompiler-by-khalil.png]
+layout: PostLayout
+isfeatured: false
+---
+
+Recently, I was working on a implementation where I needed to look at how the existing Java code was written. I used a tool called `JD-GUI` to decompile the .class files. When I was trying to save the decompiled class `JD-GUI` added extra comments that I didn't need. It was easy to delete these comments for small parts of the code, but for large java class or on batch selection, it became really hard. Additionally, I noticed that it's skipping the Java code, and there's no guarantee of achieving a 100% decompilation.
+
+So, I decided to make my own tool that decompiles `.class` to `.java` form without unnecessary comments.
+
+### Overview
+
+I have designed this tool to simplify the process of decompiling Java classes. This tool provides a user-friendly graphical interface for easy navigation and utilization.
+
+![Java Decompiler By Khalil](/static/posts/images/java-decompiler-by-khalil.png)
+
+The decompiler is created using Java Swings, and it performs decompilation using procyon-compilertools.
+
+Here is the `procyon-compilertools` mvn dependency.
+
+```xml
+<dependency>
+    <groupId>org.bitbucket.mstrobel</groupId>
+    <artifactId>procyon-compilertools</artifactId>
+    <version>0.6.0</version>
+</dependency>
+```
+
+Download the application from [here](/static/posts/resources/java-decompiler.zip)
+
+### Features
+
+**User-Friendly Interface:** The GUI (Graphical User Interface) facilitates effortless interaction.
+
+**Input & Output Directory Selection:** Choose input and output directories for seamless decompilation.
+
+**Progress Tracking:** A progress bar keeps track of the decompilation process.
+
+**Error Handling:** Informative dialogs for invalid directories and errors ensure a smooth experience.
+
+**Decompilation Results:** Generates .java files from .class files for analysis and understanding.
+
+### Getting Started
+
+The tool offers a simple setup:
+
+**Input Directory:** Select the directory containing the .class files.
+
+**Output Directory:** Choose where the decompiled .java files will be stored.
+
+**Run:** Initiate the decompilation process.
+
+### Code Structure
+
+The tool consists of three primary components:
+
+**Decompiler App**
+The entry point of the application, invoking the GUI.
+
+**Decompiler GUI**
+The graphical interface, providing options to select input and output directories, initiate the decompilation process, and visualize the progress.
+
+**Decompiler Core**
+Responsible for the actual decompilation process, iterating through directories, identifying .class files, and converting them to readable .java files.
+
+### Usage
+
+1. Launch the application.
+1. Select the input directory containing .class files.
+1. Choose the output directory for the decompiled .java files.
+1. Click the "Run" button to start the decompilation process.
+
+**_Note_**
+Ensure valid input and output directories.
+Subdirectories within the input directory are also processed recursively.
+
+### Conclusion
+
+Java Decompiler is a valuable tool for developers seeking to understand Java bytecode effortlessly. Its intuitive interface and robust functionality make it an asset in exploring and comprehending Java applications.

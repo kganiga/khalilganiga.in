@@ -1,0 +1,85 @@
+---
+title: How to find the current run mode in AEM
+date: '2022-06-30'
+tags: ['AEM', 'How To']
+draft: false
+summary: Learn how to find the current run mode AEM instance
+images: [/static/posts/images/aem-run-mode-check.png]
+layout: PostLayout
+canonicalUrl:
+isfeatured: false
+---
+
+## The Problem
+
+You suspect your instance is not running in publish mode, or is missing a custom run mode on startup and need to find out easily what runmode the instance is running under.
+
+## The Solution
+
+### Using console:
+
+Go to:[http://localhost:4502/system/console/status-slingsettings](http://localhost:4502/system/console/status-slingsettings)
+
+You will see the following line down the bottom:
+
+```
+Run Modes = [s7connect, crx3, author, samplecontent, crx3tar]
+```
+
+![aem run mode checking](/static/posts/images/aem-run-mode-check.png)
+
+### Programatical way :
+
+To get a list of run modes the current AEM instance is using you can use the SlingSettingService in your service and/or servlet.
+
+```Java
+import org.apache.felix.scr.annotations.Component;
+import org.apache.sling.settings.SlingSettingsService;
+
+@Component
+public class MyService {
+
+    @Reference
+    private SlingSettingsService slingSettingsService;
+
+    private Set<String> getRunModes() {
+        return this.slingSettingsService.getRunModes();
+    }
+}
+```
+
+If you're using jsp
+
+```jsp
+slingSettings =this.getSlingScriptHelper().getService(SlingSettingsService.class);
+Set<String> runmodes = slingSettings.getRunModes();
+```
+
+If you're Sightly
+
+```Javascript
+//logic.js
+var SlingSettingsService = Packages.org.apache.sling.settings.SlingSettingsService;
+
+use(function () {
+    // Get runmodes and transform them into an object that is easier to read for Sightly
+    var runmodesObj = {};
+    var runmodesSet = sling.getService(SlingSettingsService).getRunModes();
+    var iterator = runmodesSet.iterator();
+
+    while (iterator.hasNext()) {
+        runmodesObj[iterator.next()] = true;
+    }
+
+    return {
+        runmodes: runmodesObj
+    }
+});
+```
+
+```html
+<div data-sly-use.logic="logic.js">
+  <p>Current runmodes: ${logic.runmodes}</p>
+  <p data-sly-test="${logic.runmodes.samplecontent}">samplecontent runmode</p>
+</div>
+```

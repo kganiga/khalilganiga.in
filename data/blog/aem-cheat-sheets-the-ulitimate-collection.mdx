@@ -1,0 +1,61 @@
+---
+title: AEM CheatSheets - The Ulitimate Collection
+date: '2024-05-30'
+tags: ['AEM','How To','Tech Information','Programming']
+draft: false
+summary: Blog post about a collection of AEM cheat sheets used in daily AEM development.
+images: ['/static/posts/images/aem-cheet-sheet.png']
+layout: PostLayout
+isfeatured: true
+---
+
+Here is a list of AEM development cheat sheets that I've gathered from various sources.
+
+<TOCInline toc={props.toc} exclude="Overview" toHeading={2} />
+
+## Sling Cheatsheet
+![sling-cheatsheet](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/platform/media_1b9a37c84e3ea292bb66f8d7a0bfb70f911766fa0.png)
+
+![sling-cheatsheet](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/platform/media_11ebea66057ac0b19d7e18779a2b8c4163ef393e9.png)
+
+## JCR Query Cheatsheet
+![jcr query cheat sheet](https://freeimghost.net/images/2024/05/30/jcr_query_cheetsheet.jpeg)
+Download the pdf version of Jcr Query Cheetsheet from [here.](https://drive.google.com/file/d/1R1qIiOsU_lN387y4GlqytbUV1-K9xUpt/view?usp=drive_link)
+
+
+## HTL(Sightly) CheatSheet
+Download the pdf version of HTL Cheetsheet from [here](https://drive.google.com/file/d/11mCTlndsWr5fuWjW4L6dIH0DcUZSS63w/view?usp=drive_link)
+
+## AEM Console CheatSheet
+Download the pdf version of AEM Console CheatSheet from [here](https://drive.google.com/file/d/1WPC49IGOkmACDiocszUQKiHNACMC28qH/view?usp=drive_link)
+
+
+## Maven CheetSheet
+
+|Command|  Description|
+|--|--|
+|  **mvn clean**|  Cleans the maven project by deleting the target directory.|
+|  **mvn compiler:compile**|  Compiles the Java source classes. Use "mvn compiler:testCompile' to compile the test classes.|
+|  **mvn package**|  Build the maven project and create jar or war files.|
+|  **mvn install**|  Build the maven project and install the package files (JAR, WAR, pom.xml, etc) to the local repository.|
+|  **mvn validate**|  validate the project is correct and all necessary information is available|
+|  **mvn dependency:tree**|  Generates the dependency tree of the maven project.|
+|  **mvn dependency:analyze**|  Analyze the maven project to identify the unused declared and used undeclared dependencies|
+|  **mvn archetype:generate**|  Used to create a maven project from the archetype template project|
+|  **mvn -help**|  Prints the usage and all the different options we can use with the mvn command|
+|  **mvn site:site**|  Generate a site for the maven project.|
+|  **mvn test**|  test the compiled source code using a suitable unit testing framework.|
+|  **mvn compile**|  compile the source code of the project|
+|  **mvn verify**|  run any checks on results of integration tests to ensure quality criteria are met|
+|  **mvn -f dir/pom.xml package**|  Force the use of an alternate POM file (or directory with pom.xml)|
+|   **mvn -o package**|  runs the maven command in the offline mode.|
+|  **mvn -q package**|  runs the maven command in the quiet mode, only show errors and the test cases results.|
+|  **mvn -X package**|  runs the build and produces output in the debug mode.|
+|  **mvn -v**|  Display maven version information.|
+|  **mvn -V package**| Display maven version information and continue with the build|
+|  **mvn -DskipTests package**| skips running the test cases of the project. you can also use -Dmaven.test.skip=true option.|
+|  **mvn -T 4 clean install**| parallel build with 4 threads, useful to increase the build performance in the multiple module project.|
+
+## Sling cURL CheatSheet
+
+Here is the list of unique cURL commands [A Unique Collection Of Curated CURL Commands](/blog/a-unique-collection-of-curated-curl-commands)

@@ -1,0 +1,35 @@
+---
+title: How to automatically generate ID's for elements in oXygen XML Editor
+date: '2023-12-25'
+tags: ['How To','Oxygen XML Editor','Tutorials']
+draft: false
+summary: Learn how to generate ID's for elements whenever they are inserted in Author mode.
+images: ['/static/posts/images/idGenerationdefault.png']
+layout: PostLayout
+isfeatured: false
+---
+There are multiple ways to automatically generate ID's for elements when they are inserted in oXygen XML Editor.
+
+### Using idGenerationDefaultOptions.xml :
+
+`idGenerationDefaultOptions.xml` which is found in the `${oxygenInstallDir}\frameworks\dita\resources` directory and keeps only the default elements for which you need IDs to be generated.
+You can edit this file and additional elements for which you want to add ID.
+
+![idGenerationdefault](/static/posts/images/idGenerationdefault.png)
+
+### Using ID Options:
+
+Using ID options dialog box we can configure list of elements to generate ids automatically. `ID Options` dialog box can be found on `$(frameworkMenuItem)>ID Options`
+
+![idoptions](/static/posts/images/idoptions.png)
+
+PS: The changes made using `ID Options` dialog will override the elements list configured in `idGenerationDefaultOptions.xml` file.
+
+### Programatic way:
+
+Following is the api to generate id for elements
+
+```java
+PluginWorkspaceProvider.getPluginWorkSpace().getUtilAccess().expandEditorVariables("${id}",null);
+
+```

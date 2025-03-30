@@ -1,0 +1,203 @@
+---
+title: Automatically Add Entry and Exit Logging to Java Methods
+date: '2024-11-07'
+tags: ['how to','programming','utilities','java','logging']
+draft: false
+summary:  This post explains how to automate logging in Java methods using JavaParser. The provided code parses a Java file, locates a Logger instance, and injects Entering and Exiting log statements at the start and end of each method. This automation saves time and makes tracking program flow easier without manual log insertion.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+Ever been in a situation where you need to add logging statements to a bunch of methods? Manually putting logs into each method can be tedious, especially if you have a lot of methods across multiple files. 
+
+In this post, I'll walk you through a Java code snippet that takes an existing Java class and injects logging statements at the start and end of each method. This code will log whenever we enter or exit a method, which can be super helpful when tracking down issues or understanding the flow of a program.
+
+**The Goal: Adding Logs to Every Method**
+
+Here’s what we want our code to do:
+1. Open a Java source file.
+2. Parse it to check for any issues.
+3. Look for a Logger instance, which we’ll use to add log statements.
+4. Insert a “Entering method” log at the start of each method and an “Exiting method” log at the end.
+
+Let’s dive into the code!
+
+**The Code**
+
+Here’s the full code snippet that does all this. We'll break it down below.
+
+```java
+package com.khalil.hashing;
+
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.stmt.BlockStmt;
+
+import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+
+public class LoggerInjector {
+
+    public static void main(String[] args) throws Exception {
+        String filePath = "YourJavaFilePath";               
+        String logLevel = "debug";
+        String actionMessage = "\"";
+        FileInputStream in = new FileInputStream(filePath);
+        ParseResult<CompilationUnit> parseResult = new JavaParser().parse(in);
+
+        if (parseResult.isSuccessful() && parseResult.getResult().isPresent()) {
+            CompilationUnit cu = parseResult.getResult().get();
+
+            Optional<String> loggerVariableName = findLoggerVariable(cu);
+
+            if (loggerVariableName.isPresent()) {
+                String loggerName = loggerVariableName.get();
+                cu.findAll(ClassOrInterfaceDeclaration.class).forEach(coid -> {
+                    coid.getMethods().forEach(method -> {
+                        addLoggingToMethod(method, loggerName, logLevel,actionMessage);
+                    });
+                });
+
+                Path path = Paths.get(filePath);
+                Files.write(path, cu.toString().getBytes());
+                System.out.print("Job finished");
+            } else {
+                System.err.println("No logger variable found in the class.");
+            }
+        } else {
+            System.err.println("Error parsing the file.");
+            parseResult.getProblems().forEach(problem -> System.err.println(problem.toString()));
+        }
+    }
+
+    private static Optional<String> findLoggerVariable(CompilationUnit cu) {
+        String loggerClassName = "Logger";
+        return cu.findAll(FieldDeclaration.class).stream()
+                .filter(field -> field.getElementType().toString().endsWith(loggerClassName))
+                .flatMap(field -> field.getVariables().stream()).findFirst().map(var -> var.getNameAsString());
+    }
+
+    private static void addLoggingToMethod(MethodDeclaration method, String loggerVariableName, String logLevel,
+            String actionMsg) {
+        String methodName = method.getNameAsString();
+        BlockStmt body = method.getBody().orElse(new BlockStmt());
+
+        JavaParser javaParser = new JavaParser();
+
+        ParseResult<com.github.javaparser.ast.stmt.Statement> entryResult = javaParser.parseStatement(
+                loggerVariableName + "." + logLevel + "(" + actionMsg + "Entering: " + methodName + "()\");");
+        entryResult.getResult().ifPresent(statement -> body.addStatement(0, statement));
+
+        ParseResult<com.github.javaparser.ast.stmt.Statement> exitResult = javaParser.parseStatement(
+                loggerVariableName + "." + logLevel + "(" + actionMsg + "Exiting: " + methodName + "()\");");
+
+        if (exitResult.isSuccessful() && exitResult.getResult().isPresent()) {
+            com.github.javaparser.ast.stmt.Statement exitStatement = exitResult.getResult().get();
+
+            Optional<com.github.javaparser.ast.stmt.Statement> lastReturnStmt = body.getStatements().stream()
+                    .filter(stmt -> stmt instanceof com.github.javaparser.ast.stmt.ReturnStmt)
+                    .reduce((first, second) -> second); // This will get the last return statement if present
+
+            if (lastReturnStmt.isPresent()) {
+                body.addStatement(body.getStatements().indexOf(lastReturnStmt.get()), exitStatement);
+            } else {
+                body.addStatement(exitStatement);
+            }
+        }
+
+        method.setBody(body);
+    }
+
+
+}
+```
+**Breaking Down the Code**
+
+Now that we have the code, let’s look at what each part is doing.
+
+1. Setting Up JavaParser and Parsing the File
+
+At the start, we specify the path of the file we want to modify. Using JavaParser, we parse this file into a CompilationUnit. This unit represents the Java file as a structured object, making it easy to search and modify code.
+```java
+FileInputStream in = new FileInputStream(filePath);
+ParseResult<CompilationUnit> parseResult = new JavaParser().parse(in);
+```
+
+2. Finding the Logger Variable
+
+Next, we need to find the Logger variable in the class, as this is what we’ll use to print log messages. The findLoggerVariable method looks through all the field declarations and checks for a variable of type Logger. If it finds one, we get its name.
+```java
+private static Optional<String> findLoggerVariable(CompilationUnit cu) {
+    String loggerClassName = "Logger";
+    return cu.findAll(FieldDeclaration.class).stream()
+            .filter(field -> field.getElementType().toString().endsWith(loggerClassName))
+            .flatMap(field -> field.getVariables().stream()).findFirst().map(var -> var.getNameAsString());
+}
+```
+3. Adding the Logging Statements
+
+If we’ve found a Logger, we then move to adding the actual log statements. For each method, we add a log line at the start saying we’ve “Entered” the method, and one at the end saying we’re “Exiting” it. This is all handled in addLoggingToMethod.
+```java
+private static void addLoggingToMethod(MethodDeclaration method, String loggerVariableName, String logLevel) {
+    String methodName = method.getNameAsString();
+    BlockStmt body = method.getBody().orElse(new BlockStmt());
+
+    JavaParser javaParser = new JavaParser();
+
+    ParseResult<com.github.javaparser.ast.stmt.Statement> entryResult = javaParser
+            .parseStatement(loggerVariableName + "." + logLevel + "(\"Enter: " + methodName + "()\");");
+    entryResult.getResult().ifPresent(statement -> body.addStatement(0, statement));
+
+    ParseResult<com.github.javaparser.ast.stmt.Statement> exitResult = javaParser
+            .parseStatement(loggerVariableName + "." + logLevel + "(\"Exit: " + methodName + "()\");");
+    exitResult.getResult().ifPresent(statement -> body.addStatement(statement));
+
+    method.setBody(body);
+}
+```
+This function is where the magic happens. Using JavaParser, we parse new log statements and insert them at the beginning and end of the method’s body.
+
+4. Writing the Modified File
+
+Finally, after all modifications, we overwrite the original file with the updated code, including the new logging.
+```java
+Path path = Paths.get(filePath);
+Files.write(path, cu.toString().getBytes());
+System.out.print("Job finished");
+```
+**Running the Code**
+
+Once you’ve compiled and run this program, it will inject logs into all methods of the specified file. You should see log statements at the start and end of each method, helping you keep track of method entries and exits.
+
+**Here are the required mvn dependencies:**
+```xml
+<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjrt</artifactId>
+			<version>1.9.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
+			<version>1.9.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.javaparser</groupId>
+			<artifactId>javaparser-core</artifactId>
+			<version>3.23.1</version>
+		</dependency>
+```
+
+**Wrapping Up**
+
+With just a few lines, this tool automates logging for any Java class. This example uses JavaParser, which is a super handy library for anyone working with code generation or manipulation in Java. You could expand this by adding more logging levels or injecting other types of statements.
+
+This approach can save time, reduce repetitive work, and make your codebase easier to debug. Hope this helps make logging a little less of a hassle for you! Happy coding!

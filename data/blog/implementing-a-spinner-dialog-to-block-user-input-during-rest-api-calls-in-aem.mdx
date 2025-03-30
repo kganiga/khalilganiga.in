@@ -1,0 +1,125 @@
+---
+title: Implementing A Spinner Dialog and Block User Input During REST API Calls in AEM
+date: '2024-06-12'
+tags: ['AEM', 'How To', 'Programming', 'JavaScript']
+draft: false
+summary: Learn how to display a spinner dialog and block user input during REST API calls in AEM by using Coral UI.
+images: ['/static/posts/images/coral-ui.png']
+layout: PostLayout
+isfeatured: false
+---
+
+In web development, ensuring a seamless user experience during asynchronous operations is crucial. Recently, I came across a use case where I needed display a spinner dialog and block user input while a REST call was in progress in AEM. This post walks you through how I achieved this by leveraging Coral UI components.
+
+[Coral UI Documentation](https://developer.adobe.com/experience-manager/reference-materials/6-5/coral-ui/coralui3/components.html)
+
+## The Challenge
+
+When a REST call is initiated, it's important to prevent users from interacting with the application until the operation is complete. Initially, I used the `Coral Wait` API to display a waiting dialog during the AJAX call. While this did show a loader, it did not completely prevent user interactions in the background. Users were still able to click on elements, which could potentially disrupt the REST operation and lead to inconsistent states.
+
+## Initial Approach: Using Coral Wait API
+
+Coral Wait is used as to indicate a process that is in-progress for an indefinite amount of time. Here’s how I implemented it initially:
+
+```JavaScript
+(function(document, $) {
+    var wait;
+    var wait = new Coral.Wait().set({
+        size: "L",
+        centered: true
+    });
+    wait.id = "restCallInProgressWaitId";
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.appendChild(wait);
+    });
+
+    $(document).on('click', '#yourButton', function() {
+        wait.open();
+        // Make the AJAX call
+        $.ajax({
+            url: 'your/rest/endpoint',
+            method: 'GET',
+            success: function(response) {
+                // Handle the response
+            },
+            complete: function() {
+                wait.close();
+            }
+        });
+
+    });
+})
+```
+
+While this effectively displayed a loader, it didn't block user interactions in the background. This limitation meant that users could still click on other buttons or links while the loader was visible.
+
+## Enhanced Solution: Combining Coral Wait and Coral Dialog
+
+To fully block user input, I needed a more robust solution. I discovered that by injecting the Coral Wait component inside a Coral Dialog. The reason behind using coral dialog is it fires the coral-overlay events in the background which prevents any background interactions.
+
+Here's how I implemented the enhanced solution
+
+```JavaScript
+(function(document, $) {
+    var dialog;
+    var dialog = new Coral.Dialog().set({
+        id: "restCallInProgressDialogId",
+        backdrop: 'static',
+        variant: 'default',
+        closable: 'off',
+        open: false
+    });
+
+    var wait = new Coral.Wait().set({
+        size: "L",
+        centered: true
+    });
+    wait.id = "restCallInProgressWaitId";
+
+    document.addEventListener('DOMContentLoaded', function() {
+        dialog.content.appendChild(wait);
+        document.body.appendChild(dialog);
+    });
+
+    $(document).on('click', '#yourButton', function() {
+        if (dialog) {
+            dialog.open = true;
+        }
+        // Make the AJAX call
+        $.ajax({
+            url: 'your/rest/endpoint',
+            method: 'GET',
+            success: function(response) {
+                // Handle the response
+            },
+            complete: function() {
+                dialog.open = false;
+            }
+        });
+
+    });
+})
+```
+
+```css
+#restCallInProgressDialogId .coral2-Dialog-wrapper {
+  background-color: inherit;
+}
+```
+
+Below is the screenshot of the result
+
+![](/static/posts/images/coral-ui.png)
+
+## Benefits of the Enhanced Solution
+
+By using the Coral Dialog to encapsulate the Coral Wait component, I achieved the desired functionality:
+
+- Full User Input Blocking: The Coral Dialog's overlay prevents any user interactions with the background elements.
+- Customizable Loading Indicator: The Coral Wait component provides a clean and professional loading indicator within the dialog.
+
+## Conclusion
+
+Blocking user input during REST operations is essential for maintaining the integrity of the application state. By combining Coral Wait with Coral Dialog, I was able to create a user-friendly solution that not only displays a loading indicator but also prevents any user actions until the REST call is complete. This approach ensures a smoother and more reliable user experience in AEM.
+
+Feel free to implement this in your AEM projects and let me know if you have any questions or improvements!

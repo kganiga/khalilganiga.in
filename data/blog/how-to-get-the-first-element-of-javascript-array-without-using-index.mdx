@@ -1,0 +1,34 @@
+---
+title: How to get the first element of JavaScript array without using index
+date: '2020-11-14'
+tags: ['Code','JavaScript','Programming']
+draft: false
+summary: Learn how to get the first element of JavaScript array without using index 
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+![How to get the first element of JavaScript array without using index](https://1.bp.blogspot.com/-JXekJcN3tdo/X6_JuPfTvyI/AAAAAAAAADY/cfWUC3c-R2s283SjhhDID2l4N6O_fGnRwCLcBGAsYHQ/w640-h326/get-first-element-of-javascript-array.jpg)
+
+A simple and fairly efficient solution to fetch first element of array in JavaScript is by using [] operator.
+
+Run the below code in the browser console.
+
+```JavaScript
+var a = [1,2,3,4,5];
+
+var [b] = a;
+
+console.log(b);
+```
+
+How to get rest of the array elements: Just run the below snippet in browser console.
+
+```JavaScript
+var [c,...rest] = a;
+
+console.log("remaining array elements "+rest);
+```
+
+Cheers..!

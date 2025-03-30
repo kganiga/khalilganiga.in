@@ -1,0 +1,70 @@
+---
+title: Streamline Repetitive Tasks with Java - A Simple AutoClicker Application by Khalil
+date: '2023-11-19'
+tags: ['Utilities', 'Tools', 'Application', 'Java', 'Programming']
+draft: false
+summary: Java utility designed to replicate mouse click events triggered by a timer.
+images: [/static/posts/imagesautoclicker.png]
+layout: PostLayout
+isfeatured: true
+---
+
+Do you find yourself performing repetitive clicking tasks on your computer? Whether it's for gaming, testing, or other scenarios, the need for automation is real. In this blog post, we'll explore a simple Java application that simulates mouse clicks at regular intervals—an AutoClicker.
+
+### Meet the AutoClicker
+
+The AutoClicker is a Java utility created by Khalil Ganiga. It provides a user-friendly interface for setting the interval between automated mouse clicks. Let's delve into the key features and components of this application.
+
+### User Interface
+
+The application boasts a straightforward graphical user interface (GUI) built using Java's Swing library. Here's a breakdown of the main elements:
+
+1. Start Auto Clicker Button: Initiates the automated clicking process.
+1. Stop Auto Clicker Button: Halts the ongoing automated clicks.
+1. Exit Button: Closes the application.
+1. Timer Interval Field: Allows users to set the time interval between clicks.
+1. Progress Bar: Indicates the progress of the automated clicks.
+
+![](/static/posts/images/autoclicker.png)
+
+### Logging
+
+The application incorporates logging using Java's built-in logging framework. It records important events, such as the start and stop of the AutoClicker and any errors encountered during the process. The log file, named "AutoClickerLog.log," provides insights into the application's behavior.
+
+### How it Works
+
+#### Setting the Interval:
+
+    - Users input the desired time interval for automated clicks in seconds.
+
+#### Starting the Auto Clicker:
+
+    - Clicking the "Start Auto Clicker" button initializes a timer that triggers a mouse click event at regular intervals.
+
+#### Stopping the Auto Clicker:
+
+    - Clicking the "Stop Auto Clicker" button halts the automated clicking process.
+
+#### Exiting the Application:
+
+    - Clicking the "Exit" button closes the application.
+
+### Simulating Mouse Clicks
+
+The core functionality lies in simulating mouse clicks using the `Robot` class from Java's AWT (Abstract Window Toolkit). The application presses and releases the left mouse button at specified intervals, automating the clicking process.
+
+### Using the AutoClicker
+
+- **Run the Application**:
+
+  Download and extract the utility from [here](/static/posts/resources/AutoClickerApp.zip).
+  Execute the JAR directly with a double-click or run the `RunAutoClicker.vbs` script and the GUI will appear.
+
+- **Set the Timer Interval**:
+  Enter the desired interval between clicks in the "Timer Interval" field.
+
+- **Start Clicking**:
+  Click the "Start Auto Clicker" button to commence the automated clicking.
+
+- **Stop or Exit**:
+  Use the "Stop Auto Clicker" button to halt the process or click "Exit" to close the application.

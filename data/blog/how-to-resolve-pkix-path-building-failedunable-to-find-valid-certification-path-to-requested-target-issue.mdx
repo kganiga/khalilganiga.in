@@ -1,0 +1,92 @@
+---
+title: How to resolve PKIX path building failed/unable to find valid certification path to requested target issue
+date: '2022-08-01'
+tags: ['How To', 'Java', 'Programming']
+draft: false
+summary: Learn how to resolve PKIX path building issues during java based application development.
+images: ['/static/posts/images/pkix-0.png']
+layout: PostLayout
+---
+
+While developing java based applications, we might sometimes come across below error:
+
+![pkix-0](/static/posts/images/pkix-0.png)
+
+### Root Cause :
+
+The error due to the system firewall. The system firewall restricts the application to connect to external unsecured systems. The firewall requires a valid certificate to allow access to the external systems.
+
+### Solution :
+
+The solution is very simple. We just need to install the required certificates of the external system in our system so the firewall allows us to interact with the external system and complete our process.
+
+#### Steps to resolve the issue:
+
+- Download the Certificate.
+- Install the Certificate.
+
+### To download the certificate, follow the below steps:
+
+1. Take the particular URL from the error and copy it to a browser (In the above error the url is https://maven.apache.org/).
+
+   ![pxix-url](/static/posts/images/pkix-url.png)
+
+2. Now to the left of the URL there is a lock icon. Click on this icon and a window will pop up. From the window, select Connection is secure.
+
+   ![pkix-secure](/static/posts/images/pkix-secure.png)
+
+   and in next popup window click on Certificate is Valid.
+
+   ![pkix-secure](/static/posts/images/pkix-valid.png)
+
+3. Once we select the certificate, it will redirect to another window. From there we have to select the Details tab and from the Details click on Copy to File. After clicking again, a new window will pop up. In that window, select next.
+
+   ![pkix-1](/static/posts/images/pkix-1.png)
+   ![pkix-2](/static/posts/images/pkix-2.png)
+
+4. After we perform all the above steps, we will be redirected to a new window where we need to select the format for the certificate. We will have to choose DER encoded binary and click on Next.
+
+   ![pkix-3](/static/posts/images/pkix-3.png)
+
+5. Now we need to choose a location where we need to save the certificate and we also need to give some name to the certificate.
+
+   ![pkix-4](/static/posts/images/pkix-4.png)
+
+6. Once a File name is given and saved, then select Next. It will direct us to another window showing the details. If all the details are correct, click on Finish. A export Success pop up will appear.
+
+**Note:** I saved the File name as repo.
+
+So, the downloading of certificates is done. Now the next process is to install the certificate in the cacerts file of the jdk installed in our system using the command line.
+
+### Installation of the Certificate from Command line:
+
+**Command for installation:**
+
+```
+keytool -importcert -trustcacerts -alias <alias name for the certificate> -file < path where we have save the certificate > -keystore "< path for the cacerts file >" -storepass changeit
+
+```
+
+For me the Command will be:
+
+```
+ keytool -importcert -trustcacerts -alias repo -file C:\Users\khalil\Desktop\repo.cer -keystore "C:\Program Files\Java\jdk-11.0.14\lib\security\carcerts" -storepass changeit
+
+```
+
+**Note:**
+
+- I am using jdk11 so the cacerts file path for my system is `C:\Program Files\Java\jdk-11.0.14\lib\security\carcets`. It may differ for you based on your system and jdk version.
+
+- I have given the alias name as repo and the path where I save my certificate is `C:\Users\DELL\Desktop\repo.cer`
+
+### To install the certificate, follow the below steps:
+
+1. Open Command Prompt as an Administrator and use the command for installation and press enter.
+2. Once the command is executed, it will ask for confirmation. Write Yes and the certificate will be installed with confirmation.
+
+In the above process, we have downloaded and installed the certificate successfully in our system.
+
+Now if we will execute the application it will not show certificate issues and will also download the required data from that particular system.
+
+Cheers..!

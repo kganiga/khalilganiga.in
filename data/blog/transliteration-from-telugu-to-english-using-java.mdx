@@ -1,0 +1,48 @@
+---
+title: Transliteration from Telugu to English using java
+date: '2022-06-14'
+tags: ['Code','Java','How To','Programming']
+draft: false
+summary: Learn how to transliterate text from asian languages to english
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+![transliterate](https://1.bp.blogspot.com/-7LNiZzTwDTw/X6-q8ZmGCJI/AAAAAAAAAB0/MGAA5jIaAzEuOlkI7gLIPC4AWjgQp_KQwCLcBGAsYHQ/w640-h308/transliterate-telugu-english.png)
+
+The below example shows transliteration from Telugu to English using java.
+
+Use Case: It can be useful to generate tags for Asian languages.
+
+I have used IBM's International Component for Unicode for Java API.
+
+```java
+package com.khalil.samples;
+
+import com.ibm.icu.text.Transliterator;
+
+/**
+ *
+ * @author Khalil
+ *
+ */
+
+public class TransliterationExample {
+	public static void main(String... args) {
+		final String TEL_TO_ENG = "Telugu-En";
+		String teluguWord = "నమస్కారము ";
+		Transliterator toEnglish = Transliterator.getInstance(TEL_TO_ENG);
+		String out = toEnglish.transliterate(teluguWord);
+		System.out.println(teluguWord + "  > " + out);
+	}
+}
+```
+
+### output
+
+నమస్కారము > namaskāramu
+
+Similarly, you can transliterate to any other language by changing the language code mentioned in line number5 in the above program.
+
+Cheers..!

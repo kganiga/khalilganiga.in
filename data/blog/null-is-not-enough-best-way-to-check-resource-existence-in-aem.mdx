@@ -1,0 +1,41 @@
+---
+title: 'Null is Not Enough : Best Way to Check Resource Existence In AEM'
+date: '2023-12-18'
+tags: ['AEM', 'How To', 'Tutorials', 'Programming']
+draft: false
+summary: AEM tutorial shows you the best way to fetch resources using resolver and avoid common pitfalls.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+Today I came to know an intersting fact about AEM's [resourceResolver](https://developer.adobe.com/experience-manager/reference-materials/6-5/javadoc/org/apache/sling/api/resource/ResourceResolver.html#getResource-java.lang.String-) api. As AEM developers We usually use the `resolver.getResource(assetPath)` method to get resources, and then do the null checks.
+
+But here's the thing: sometimes, if the asset path is not correct or moved to another location, this method doesn't return null.
+
+lets consider this scenario :
+You're working on a component that needs an image resource. You might have written code like:
+
+```java
+Resource imageResource = resolver.getResource(imagePath);
+if (null != imageResource) {
+    // Do something with the imageResource
+}
+
+```
+
+The method won't give us null. Instead, it'll give us something called a `NonExistingResource`, and our check for null won't catch it. This could lead to unexpected issues later on.
+
+**How to fix this?**
+It's simple: double-check the resource using existance `ResourceUtil` api.
+
+```java
+Resource imageResource = resolver.getResource(imagePath);
+if (null != imageResource && !ResourceUtil.isNonExistingResource(imageResource)) {
+    // The resource is good to use!
+}
+```
+
+By adding this extra check, we can avoid those tricky bugs caused by invalid resources. This way, our components will work more reliably.
+
+Cheers!

@@ -1,0 +1,54 @@
+---
+title: Most useful ADB commands
+date: '2020-11-02'
+tags: ['Developer Tools', 'Android']
+draft: false
+summary: List of most useful adb commands.
+---
+
+![adb_commands](https://1.bp.blogspot.com/-93PxNAq2nWY/X6AmQbh21GI/AAAAAAAAAAs/rTvfxqB5nR8qUFpKZw54gSxXbRdhPa9-ACLcBGAsYHQ/w640-h317/most-useful-adb-commands.png)
+ADB has a wide variety of functions for managing your device, moving content to and from your phone, installing apps, backing up and restoring your software, and more. You can use ADB while your phone is plugged in to a computer.
+
+Below are the most useful commands and their functions:
+
+`adb devices`
+Check connection and get basic information about devices connected to the computer. It will return a list of all devices that you have connected to your computer. If it returns a device ID like the one seen above, you're connected and ready to send commands.
+
+`adb reboot recovery`
+Reboot your phone into recovery mode.
+
+`adb reboot-bootloader`
+Reboot your phone into bootloader/fastboot mode.
+
+`adb push [source] [destination]`
+Copy files from your computer to your phone.
+
+`adb pull`
+Copy files from your phone to your computer.
+
+`adb install [source.apk]`
+Remotely install APKs on your phone.
+
+`adb shell [command]`
+Open or run commands in a terminal on the host Android device.
+
+`adb backup`
+Create a full backup of your phone and save to the computer.
+
+`adb restore`
+Restore a backup to your phone.
+
+`adb sideload`
+Push and flash custom ROMs and zips from your computer.
+
+`fastboot oem unlock`
+Unlock your bootloader, making root access possible.
+
+`fastboot devices`
+Check connection and get basic information about devices connected to the computer.
+
+`fastboot flash recovery`
+Flash a custom recovery image to your phone.
+
+`fastboot boot recovery`
+Reboot to custom recovery without installing recovery.

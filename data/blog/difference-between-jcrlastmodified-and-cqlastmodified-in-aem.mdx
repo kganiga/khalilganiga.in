@@ -1,0 +1,15 @@
+---
+title: Difference between jcr:lastModified and cq:lastModified in AEM
+date: '2021-09-19'
+tags: ['AEM', 'Code', 'How To','Programming']
+draft: false
+summary: Learn about difference between jcr:lastModified and cq:lastModified in AEM
+---
+
+What is a need of having two different dates `jcr:lastModified` and `cq:lastModified` in AEM and when which one is used ?
+
+`cq:lastModified` is present at `jcr:content` node level, means it is available on all those nodes whose `jcr:primaryType` is `cq:pageContent`. Where as at all other nodes types `jcr:lastModified` is used. In general we can say that if any content is getting modified through aem functionality it will refer and update `cq:lastModified` and everything else that is using JCR core functionality will refer and update `jcr:lastModified`. Both properties can’t be present on the same node.
+
+#### Note:
+
+jcr:content( cq:pageContent ) is a structured node and has a `sling:resourceType` property which points or refers to the component that contains the sling script which will be used for rendering the content.

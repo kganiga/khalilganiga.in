@@ -1,0 +1,63 @@
+---
+title: 'How to backup/restore AEM local instance'
+date: '2022-06-24'
+tags: ['AEM', 'How To', 'Code','Tutorials']
+draft: false
+summary: 'Learn how to backup or restore local AEM instance using npm cli.'
+images: [/static/posts/images/aem-backup-cli.png]
+isfeatured: true
+---
+
+If you're an AEM dev, you understand the frustration of a broken AEM instance during development. I break my local AEM instances more times than I can count, and usually, I have to redo my local AEM setup and which is a painful job.
+
+To avoid this problem, I used to take the zip file of crx-quickstart. The pain point here is zip creation will take hours.
+
+Recently I found simple tool,which will create backup of crx-quickstart.
+
+I will explain how to use it and provide some additional details.
+
+### [aem-backup-cli:](https://github.com/ahmed-musallam/aem-backup-cli)
+
+aemb cli is a utility that packages the AEM crx-quickstart folder so that we can restore it when needed. Everything you set up on an AEM instance is inevitably stored in the filesystem under the crx-quickstart folder, which makes it extremely easy to backup the whole instance. The only caveat, you have to do a backup while your AEM instance is stopped.Which is not bad since you’ll be doing this for local development only.
+
+### Installing AEM Backup CLI
+
+    - Install Node.js and grab the LTS version
+    - Install the CLI: npm install -g aem-backup-cli
+    - You should now be able to run _aemb_
+
+![aem backup restore cli](https://lh3.googleusercontent.com/-UnyJxwOGbO4/YCJwIY3FVuI/AAAAAAAAAGk/66pKHsoAdIUHAeATy4EfxkNy2fUAURcWACLcBGAsYHQ/w640-h306/image.png)
+
+### Before You Backup
+
+    - You should only run aemb once you are in the AEM directory. (the directory that contains the AEM jar and the crx-quickstart folder)
+    - You should only run aemb after your AEM instance has been completely shutdown.
+
+Now You can use any of the aemb commands, you can see those by typing help
+
+### Available Commands
+
+```
+    help [command...]              Provides help for a given command.
+    exit                           Exits application.
+    backup [options] [backupName]  Archive crx-quickstart in current directory and move archive to crx-quickstart.backups folder in current directory
+    list                           List all available backups
+    delete [options]               Delete a backup from available backups
+    restore [options]              Restore a backup from a list of available backups
+```
+
+### Examples:
+
+```
+# create backup named my-first-backup
+aemb$ backup my-first-backup
+
+# List available backups
+aemb$ list
+
+# restore a backup from a list of backups
+aemb$ restore
+
+# delete a backup from a list of backups
+aemb$ delete
+```

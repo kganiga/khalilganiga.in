@@ -1,0 +1,34 @@
+---
+title: How to run offline compaction in AEM on Windows
+date: '2022-08-03'
+tags: ['AEM', 'How To', 'Java']
+draft: false
+summary: Learn how to perform offline compaction in aem to reduce the repository size on windows machine.
+images: ['/static/posts/images/oak-version.png']
+layout: PostLayout
+---
+
+Is your AEM repository size increasing rapidly? Follow the step by step guide below to perform offline tar compaction in aem.
+
+**Prerequisite** : Download the correct version of oak jar that matches with your aem repository version.
+
+### How to find correct version of oak-run jar?
+
+- Goto [Felix console](http://localhost:4502/system/console).
+- Search for oak.
+- Check the version of each oak bundle.
+
+  ![oak-version](/static/posts/images/oak-version.png)
+
+- Now go to [MVN Repository](https://mvnrepository.com/artifact/org.apache.jackrabbit/oak-run) and download respective oak-run.jar file.
+
+### Steps to run offline compaction:
+
+1. Shutdown AEM Instance
+2. Navigate to oak jar location.
+3. Run the following command on command prompt.
+
+```
+java -jar oakrun.jar compact install-folder/crx-quickstart/repository/segmentstore
+```
+ 

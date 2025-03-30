@@ -1,0 +1,31 @@
+---
+title: How to get the Windows 10 context menu in Windows 11
+date: '2022-08-02'
+tags: ['How To', 'windows', 'registry', 'Tech Tips']
+draft: false
+summary: Learn howto bring back the classic right-click context menu with all the options on Windows 11 by editing this key in the Registry.
+images: ['/static/posts/images/context-menu.png']
+layout: PostLayout
+---
+
+The right-click context menu in Windows 11 has been rebuilt to provide better experience, however there are less options available than in the previous menu.
+
+It requires a extra click (`Show more options`) to see more options or use `Shift + F10` keyboard shortcut to access the other entries.
+
+If you don't like the new Windows 11 menu design, it is possible to disable the new context menu to enable the new classic right-click menu by editing the Registry.
+
+**Note** : I am using command line way to edit the registry
+
+1. Open Windows Terminal with Windows PowerShell or Command Prompt. You don’t need to start it as administrator, since the override will be set per-user basis.
+2. Copy and paste the following command into Windows Terminal, then press Enter
+
+   ```
+   reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve
+   ```
+
+   If everything goes right, it should say "The operation completed successfully."
+
+   ![regedit](/static/posts/images/regedit1.png)
+
+3. Close Windows Terminal.
+4. Restart the PC to make the override key take effect.

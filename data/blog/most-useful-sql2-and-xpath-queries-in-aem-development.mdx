@@ -1,0 +1,131 @@
+---
+title: Most Useful SQL2 and Xpath Queries in AEM Development
+date: '2021-09-11'
+tags: ['AEM','Code','How To']
+draft: false
+summary:  Most useful SQL2 and Xpath queries.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+Following is the list of SQL2 and Xpath queries which are widely used in day to day aem development.
+
+## SQL2
+
+### All nodes with a specific name
+
+```
+SELECT * FROM [nt:unstructured] AS nodeWHERE ISDESCENDANTNODE(node, "/search/in/path")
+AND NAME() = "nodeName"
+
+```
+
+### All pages below content path
+
+```
+SELECT * FROM [cq:Page] AS page
+WHERE ISDESCENDANTNODE(page ,"/search/in/path")
+```
+
+### All components of a specific Resource Type
+
+```
+SELECT * FROM [nt:unstructured] AS comp
+WHERE ISDESCENDANTNODE(comp, "/search/in/path")
+AND [sling:resourceType] = "componentType"
+```
+
+### All nodes where a property contains some String
+
+```
+SELECT * FROM [nt:unstructured] AS node
+WHERE ISDESCENDANTNODE(node, "/search/in/path")
+AND CONTAINS([propertyName], "someString")
+```
+
+### All nodes where a property is not null and not empty
+
+```
+SELECT * FROM [nt:unstructured] AS node
+WHERE node.[propertyName] IS NOT NULL AND node.[propertyName] <> ""
+```
+
+### All nodes where a property is null or empty
+
+```
+SELECT * FROM [nt:unstructured] AS node
+WHERE (node.[propertyName] = "" OR node.[propertyName] IS NULL)
+```
+
+### All nodes where a property is of type Date (also possible: String, Long, Boolean and more)
+
+```
+SELECT * FROM [nt:unstructured] AS node
+WHERE ISDESCENDANTNODE(node, "/search/in/path")
+AND PROPERTY(node.[propertyName], "DATE") LIKE "%"
+```
+
+### Date property of child node is greater than
+
+```
+SELECT page.* FROM [cq:Page] AS page
+INNER JOIN [cq:PageContent] AS jcrcontent ON ISCHILDNODE(jcrcontent, page)
+WHERE ISDESCENDANTNODE(page, "/content/path/to/page")
+AND jcrcontent.[cq:lastModified] >= CAST("2019-01-01T00:00:00.000Z" AS DATE)
+```
+
+###Every page with specific name
+
+```
+SELECT * FROM [cq:Page] AS page
+WHERE ISDESCENDANTNODE(page, "/search/in/path")
+AND name() = "pageName"
+```
+
+### Every page with specific name, that has a child node with a specific name
+
+```
+SELECT * FROM [cq:Page] AS page
+INNER JOIN [nt:base] AS childnode ON ISCHILDNODE(childnode, page)
+WHERE ISDESCENDANTNODE(page, "/search/in/path")
+AND name(page) = "pageName"
+AND name(childnode) = "nodeName"
+```
+
+## XPATH
+
+### Property not empty
+
+```
+/jcr:root/content/path/to/page//nodeName[@propertyName != ""]
+```
+
+### Specific property contains
+
+```
+/jcr:root/content/path/to/page//nodeName[jcr:contains(@propertyName,'someValue')]
+```
+
+### Any property contains
+
+```
+/jcr:root/content/path/to/page//*[jcr:contains(., 'someValue')]
+```
+
+### AND operation (for more than one property)
+
+```
+/jcr:root/content/path/to/page//*[@firstPropertyName = "someValue",@secondPropertyName != "anotherValue"]
+```
+
+### Get all jcr:content nodes that
+
+have a specific resourceType \
+have any property that contains a specific (text-) value \
+have a "grandchild" node, which has a specific resourceType \
+have a "grandchild" node, which has a property called "date" greater than "2012-06-01" and less than "2016-07-01" and order the result by the date property in descending order.
+
+```
+/jcr:root/content/path/to/node//element(*,cq:PageContent)[@sling:resourceType="someType"and jcr:contains(., "someValue") and */*/@sling:resourceType="anotherType" and */*/@date >= xs:dateTime("2012-06-01T00:00:00.000+02:00") and */*/@date <= xs:dateTime("2016-07-01T00:00:00.000+02:00")] order by pathto/grandchild/@date descending
+```
