@@ -35,7 +35,7 @@ const SocialIcons = () => {
         {socialLinks.map(({ href, icon: Icon, title }) =>
           href.startsWith('/') ? (
             // Internal links use Next.js <Link>
-            <Link key={title} href={href} className="text-gray-400 hover:text-gray-500">
+            <Link key={title} href={href} className="text-white-400 hover:text-primary-600">
               <Icon size={32} title={title} />
             </Link>
           ) : (
@@ -45,7 +45,7 @@ const SocialIcons = () => {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-gray-500"
+              className="hover:text-white-600 text-primary-600"
               title={title}
             >
               <Icon size={32} />

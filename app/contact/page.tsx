@@ -26,12 +26,7 @@ export default function Contact() {
         <p className="pb-5"></p>
         <Link
           href="/"
-          className="btn btn-primary focus:shadow-outline-blue mb-4 inline-flex 
-             items-center rounded-md border border-transparent bg-primary-500 
-             px-4 py-2 text-base font-medium text-white shadow-sm transition 
-             duration-150 ease-in-out hover:bg-gray-200 hover:text-primary-600 focus:outline-none focus:ring-2 
-             focus:ring-primary-500 focus:ring-offset-2 active:bg-primary-700 disabled:opacity-50 
-             dark:hover:bg-gray-800 dark:hover:text-white md:mb-0"
+          className="hover:-tranneutral-y-px inline-block w-auto min-w-[100px] rounded-md bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 text-center text-white shadow-xl shadow-blue-200 transition-all hover:bg-gradient-to-b hover:text-white hover:shadow-2xl hover:shadow-blue-400 dark:shadow-blue-900 sm:w-auto"
         >
           Back to homepage
         </Link>

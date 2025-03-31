@@ -35,9 +35,9 @@ export default function Home({ posts }) {
       <div className="order-1 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <div className="space-y-2 pb-8 pt-6 md:space-y-5">
-            <h2 className="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Latest Writing
-            </h2>
+            <h6 className="pt-6 text-left text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">
+              Latest articles
+            </h6>
           </div>
 
           <div className="divide-y divide-gray-200 pr-8 dark:divide-gray-700">
@@ -55,9 +55,12 @@ export default function Home({ posts }) {
                       <div className="space-y-4">
                         <div className="flex flex-col gap-4 text-sm text-gray-500 dark:text-gray-400">
                           <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
-                          <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                            <Link href={`/blog/${slug}`}>{title}</Link>
-                          </h3>
+                          <Link href={`/blog/${slug}`}>
+                            <p className="text-lg font-semibold capitalize leading-tight tracking-tight sm:text-lg md:text-xl">
+                              {title}
+                            </p>
+                          </Link>
+                          <p className="mt-3 hidden text-sm  sm:line-clamp-2 lg:block">{summary}</p>
                           <div className="flex flex-wrap gap-2">
                             {tags.slice(0, 5).map((tag) => (
                               <Link
@@ -70,7 +73,6 @@ export default function Home({ posts }) {
                             ))}
                           </div>
                         </div>
-                        <p className="max-w-4xl text-gray-600 dark:text-gray-400">{summary}</p>
                       </div>
                     </div>
                   </article>
@@ -105,9 +107,9 @@ export default function Home({ posts }) {
       </div>
       <div className="order-2 mt-12 divide-y divide-gray-200 dark:divide-gray-700 lg:order-3">
         <div className="space-y-2 pb-8 pt-6 md:space-y-5">
-          <h2 className="font-mono text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Featured Stories
-          </h2>
+          <h6 className="pt-6 text-left text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">
+            Featured Musings
+          </h6>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {finalStories.length > 0 && (
@@ -130,7 +132,7 @@ export default function Home({ posts }) {
               <div className="p-6">
                 <Link
                   href={`/stories/${finalStories[0].slug}`}
-                  className="text-2xl font-bold text-gray-900 hover:text-indigo-600 dark:text-gray-100"
+                  className="font-semibold capitalize leading-tight tracking-tight  sm:text-lg md:text-xl"
                 >
                   {finalStories[0].title}
                 </Link>
@@ -156,7 +158,7 @@ export default function Home({ posts }) {
               <div className="p-4">
                 <Link
                   href={`/stories/${story.slug}`}
-                  className="text-lg font-semibold text-gray-900 hover:text-indigo-600 dark:text-gray-100"
+                  className="font-semibold capitalize leading-tight tracking-tight  sm:text-lg md:text-xl"
                 >
                   {story.title}
                 </Link>

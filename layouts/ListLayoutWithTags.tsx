@@ -146,7 +146,7 @@ export default function ListLayoutWithTags({
                           <div className="space-y-4">
                             <div className="flex flex-col gap-4 text-sm text-gray-500 dark:text-gray-300">
                               <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
-                              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                              <h2 className="text-lg font-semibold capitalize leading-tight tracking-tight sm:text-lg md:text-xl">
                                 <Link href={`/${path}`}>{title}</Link>
                               </h2>
                               <div className="flex flex-wrap gap-2">
@@ -161,15 +161,17 @@ export default function ListLayoutWithTags({
                                 ))}
                               </div>
                             </div>
-                            <p className="text-gray-600 dark:text-gray-300">{summary}</p>
+                            <p className="mt-3 hidden text-sm  sm:line-clamp-2 lg:block">
+                              {summary}
+                            </p>
                           </div>
-                          <Link
+                          {/* <Link
                             href={`/${path}`}
                             className="group inline-flex items-center text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
                           >
                             Read article
                             <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                          </Link>
+                          </Link> */}
                         </div>
                       </article>
                     </li>

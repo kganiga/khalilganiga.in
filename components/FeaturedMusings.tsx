@@ -49,7 +49,9 @@ export default function FeaturedMusings({ posts }: StorySliderProps) {
                 className="h-full w-full object-cover transition-opacity duration-300 ease-in-out"
               />
               <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-50 p-4 text-white">
-                <h2 className="text-2xl font-bold">{featuredStory.title}</h2>
+                <h2 className="font-semibold capitalize leading-tight tracking-tight sm:text-lg md:text-xl">
+                  {featuredStory.title}
+                </h2>
                 <p className="text-sm">{featuredStory.excerpt}</p>
               </div>
             </div>
