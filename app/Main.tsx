@@ -49,7 +49,7 @@ export default function Home({ posts }) {
             {posts.slice(0, MAX_DISPLAY).map((post) => {
               const { slug, date, title, summary, tags } = post
               return (
-                <div key={slug} className="py-12">
+                <div key={slug} className="py-6">
                   <article>
                     <div className="space-y-8">
                       <div className="space-y-4">

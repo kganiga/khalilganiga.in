@@ -140,7 +140,7 @@ export default function ListLayoutWithTags({
                 {displayPosts.map((post) => {
                   const { path, date, title, summary, tags } = post
                   return (
-                    <li key={path} className="py-12 first:pt-0">
+                    <li key={path} className="py-6 first:pt-0">
                       <article>
                         <div className="space-y-8">
                           <div className="space-y-4">

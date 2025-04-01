@@ -2,7 +2,7 @@ import React from 'react'
 
 const Hero = () => {
   return (
-    <div className="container mx-auto flex flex-col items-center px-4 py-16 text-center md:text-left">
+    <div className="container mx-auto flex flex-col items-center px-4 text-center md:text-left">
       <div className="w-full">
         <h2 className="mb-4 text-4xl font-semibold md:text-5xl">
           hi, I’m <span className="gkb text-slate-600">Khalil Ganiga</span>
