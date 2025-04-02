@@ -202,6 +202,35 @@ export const PrivacyPolicy = defineDocumentType(() => ({
   },
 }))
 
+export const TermsAndCondition = defineDocumentType(() => ({
+  name: 'TermsAndCondition',
+  filePathPattern: 'terms-and-condition/**/*.mdx',
+  contentType: 'mdx',
+  fields: {
+    title: { type: 'string', required: true },
+    date: { type: 'date', required: true },
+    lastmod: { type: 'date' },
+    draft: { type: 'boolean' },
+    summary: { type: 'string' },
+    layout: { type: 'string' },
+  },
+  computedFields: {
+    ...computedFields,
+    structuredData: {
+      type: 'json',
+      resolve: (doc) => ({
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        headline: doc.title,
+        datePublished: doc.date,
+        dateModified: doc.lastmod || doc.date,
+        description: doc.summary,
+        url: `${siteMetadata.siteUrl}/${doc._raw.flattenedPath}`,
+      }),
+    },
+  },
+}))
+
 export const Authors = defineDocumentType(() => ({
   name: 'Authors',
   filePathPattern: 'authors/**/*.mdx',
@@ -222,7 +251,7 @@ export const Authors = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: 'data',
-  documentTypes: [Blog, Authors, Story, PrivacyPolicy],
+  documentTypes: [Blog, Authors, Story, PrivacyPolicy, TermsAndCondition],
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [

@@ -25,6 +25,13 @@ export default function Footer() {
             Privacy Policy
           </Link>
           <Link
+            href="/terms-and-conditions"
+            className="text-gray-600 hover:text-primary-500"
+            aria-label="terms-and-conditions"
+          >
+            Terms and Conditions
+          </Link>
+          <Link
             href="/about"
             className="text-gray-600 hover:text-primary-500"
             aria-label="about-us"
