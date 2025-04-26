@@ -1,0 +1,161 @@
+---
+title: Null, Actually
+date: '2025-04-26'
+tags: ['Tech Information', 'Surface vs Reality', 'Tutorials', 'Stroies']
+draft: false
+summary: True story — what’s forgotten isn’t gone. Sometimes, it’s just waiting.
+images: ['/static/posts/images/null-actually-khalil-ganiga.png']
+layout: PostBanner
+isfeatured: false
+---
+
+The feature was written years ago.
+
+Forged under pressure, it was one of those **"just get it done"** moments.  
+They wanted it fast.  
+DevX — sharp, but short on time — developed it in a single afternoon.
+
+One class.  
+Three methods.  
+Five POJOs.  
+Seven variables.  
+One happy path.
+
+It was tested once. It worked.
+
+Everyone was satisfied — including DevX, who pushed the code to prod without a second thought...
+
+For years, no one touched that part of that code.
+
+It simply existed , silent, forgotten — like a dusty stage prop left behind after the curtain fell on a play that would never be performed again.
+
+Until one day...
+
+Someone clicked that old button.  
+It was hidden three layers deep in the UI, almost invisible.
+
+At first, nothing happened.  
+No crash. No error.  
+Just a blank, **nothing**.
+
+Multiple team members checked.  
+They waited hours, Hoped.  
+Still — nothing.
+
+Confused, then they finally raised a ticket.
+
+---
+
+It was a fine Monday morning when the ticket assigned to**DevY** — a confident developer with a reputation for tackling tough implementations.
+
+He smiled, sipping from his **#CodeWizard** coffee mug.  
+_"This should be quick,"_ he thought.
+
+He didn't even tried to replicate the issue in local, he logged straight into the environment.
+
+**Adhidha Surprisu..**
+
+There weren’t even logs configured for that feature.
+
+Without a second thought, DevY swung his magic wand:  
+A debug-level log file appeared on the server.  
+He waved it again and executed the feature.
+
+Nothing.  
+No crash.  
+No error.
+
+The application just **skipped** that piece of code — like a stone skipping across a silent river.
+
+DevY chanted every **mantra** he knew.
+
+He searched the logs for `"Exception"`, `"Error"`, `"Failure"`.  
+Still nothing.  
+The river ran smooth and quiet.
+
+He opened his magic box — **Eclipse IDE**, bright and blinding in its daylight theme.
+
+No red squiggles.  
+No SonarLint warnings.  
+Not even a yellow underline.
+
+The code looked clean — _too_ clean.  
+It reminded him of a white chalk on a blackboard: precise and suspiciously perfect.
+
+He whispered the sacred mantra: `mvn compile`.  
+The build succeeded.  
+Of course it did.
+
+But DevY was no fool.  
+He knew that appearances were deceiving.
+
+He began tracing the code line by line, sprinkling logs like a farmer scattering seeds across dry land.
+
+And then — he saw it.
+
+A method, calling a getter on a POJO.  
+He scrolled back.  
+That variable... it was supposed to be set earlier.  
+But it wasn’t.  
+The setter had never been called.
+
+The hollow object passed through methods.  
+No crash.  
+No warning.  
+perfect betrayal.
+
+It was like watching a magician reach into a hat and pull out... nothing.  
+Because the magician had already left the stage.
+
+The object existed, but it was hollow — an empty shell of what it was meant to be.
+
+DevY leaned back in his chair.
+
+Where was the exception?  
+Where was the chaos?
+
+And then it struck him:
+
+- No exception handling.
+- No `try`.
+- No `catch`.
+- Just code that **assumed** the world was perfect.
+
+He sighed deeply, shook his head, and wrapped the fragile block of code in a simple try-catch.
+
+He ran it again.
+
+**Boom.**  
+**NullPointerException.**
+
+Of course.
+
+A ghost from the past, finally showing its face.
+
+It took him five minutes to fix the actual problem.  
+But the real challenge had been uncovering it.
+
+Later that day, DevY left a note in the freshly patched code:
+
+> "**// Nulls don’t shout — they just sit quietly, waiting to ruin your day.**"
+
+And beneath that:
+
+> "// Always assume someone will use the feature someday — and it won’t be you."
+
+---
+
+### **Moral of the Story?**
+
+    > Just because code compiles clean doesn't mean it's complete.
+    > The happy path is never the only path.
+    > Sometimes, the most dangerous bugs are the ones that say **nothing** at all.
+    > Even the cleanest-looking code can hide the dumbest mistakes.
+    > Logs help. Try-catch saves.
+    > And never ever trust a POJO without a proper setter.
+
+---
+
+Somewhere, DevX still doesn’t know they built a ticking time bomb. 
+And somewhere, another button waits, buried and silent...  
+Patiently.
