@@ -8,6 +8,7 @@ import PageTitle from '@/components/PageTitle'
 import SectionContainer from '@/components/SectionContainer'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
+import Head from 'next/head'
 
 interface LayoutProps {
   content: CoreContent<Blog>
@@ -21,6 +22,18 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
 
   return (
     <SectionContainer>
+      <Head>
+        <title>{`${title} | ${siteMetadata.title}`}</title>
+        <meta name="description" content={content.summary || siteMetadata.description} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={content.summary || siteMetadata.description} />
+        <meta property="og:url" content={`${siteMetadata.siteUrl}/${path}`} />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={content.summary || siteMetadata.description} />
+        <link rel="canonical" href={`${siteMetadata.siteUrl}/${path}`} />
+      </Head>
       <ScrollTopAndComment />
       <article>
         <div>

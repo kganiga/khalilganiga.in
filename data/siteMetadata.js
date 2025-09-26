@@ -2,7 +2,7 @@
 const siteMetadata = {
   title: 'Khalil Ganiga',
   author: 'Khalil Ganiga ',
-  headerTitle: '<KG/>',
+  headerTitle: 'Khalil Ganiga',
   description: "A developer's log book",
   language: 'en-us',
   siteUrl: 'https://www.khalilganiga.in',
@@ -12,10 +12,10 @@ const siteMetadata = {
   email: 'admin@khalilganiga.in',
   github: 'https://github.com/kganiga',
   twitter: 'https://twitter.com/Im_Khalil',
-  linkedin: 'https://www.linkedin.com/in/khalilg',
-  instagram: 'https://instagram.com/khalilbasha.g',
+  linkedin: 'https://www.linkedin.com/in/khalilbashag',
+  instagram: 'https://instagram.com/riv3rmak3r',
   youtube: 'https://youtube.com/khalilbasha.g',
-  facebook: 'https://facebook.com/khalilbasha.g',
+  facebook: 'https://facebook.com/riv3rmak3r',
   locale: 'en-US',
   stickyNav: true,
   analytics: {

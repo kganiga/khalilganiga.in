@@ -1,10 +1,10 @@
 import siteMetadata from '@/data/siteMetadata'
 import headerNavLinks from '@/data/headerNavLinks'
-import Logo from '@/data/logo.svg'
 import Link from './Link'
 import MobileNav from './MobileNav'
 import ThemeSwitch from './ThemeSwitch'
 import SearchButton from './SearchButton'
+import Logo from './Logo'
 
 const Header = () => {
   let headerClass = 'flex items-center w-full bg-white dark:bg-gray-950 justify-between py-10'
@@ -14,37 +14,36 @@ const Header = () => {
 
   return (
     <header className={headerClass}>
-      <Link
-        href="/"
-        aria-label={siteMetadata.headerTitle}
-        className="text-gray-900 transition-transform duration-200 hover:scale-105 hover:text-gray-700 dark:text-gray-100 dark:hover:text-primary-400"
-      >
-        <div className="flex items-center justify-between">
-          <div className="mr-3">{/* <Logo /> */}</div>
-          {typeof siteMetadata.headerTitle === 'string' ? (
-            <div className="h-6 text-xl font-semibold sm:text-2xl">{siteMetadata.headerTitle}</div>
-          ) : (
-            siteMetadata.headerTitle
-          )}
-        </div>
-      </Link>
-      <div className="flex items-center space-x-4 leading-5 sm:space-x-6">
-        <div className="no-scrollbar hidden max-w-40 items-center space-x-4 overflow-x-auto sm:flex sm:space-x-6 md:max-w-72 lg:max-w-96">
-          {headerNavLinks
-            .filter((link) => link.href !== '/')
-            .map((link) => (
+      <div className="mx-auto flex w-full max-w-screen-xl items-center justify-between px-4">
+        <Link
+          href="/"
+          aria-label={siteMetadata.headerTitle}
+          className="text-gray-900 transition-transform duration-200 hover:scale-105 hover:text-gray-700 dark:text-gray-100 dark:hover:text-primary-400"
+        >
+          <div className="flex items-center">
+            <div className="mr-3">
+              <Logo className="h-8 w-auto" title={siteMetadata.headerTitle} />
+            </div>
+          </div>
+        </Link>
+        <nav className="hidden flex-1 justify-center sm:flex">
+          <div className="flex space-x-6">
+            {headerNavLinks.map((link) => (
               <Link
                 key={link.title}
                 href={link.href}
-                className="block font-medium text-gray-900 hover:text-primary-500 dark:text-gray-100 dark:hover:text-primary-400"
+                className="font-medium text-gray-900 hover:text-primary-500 dark:text-gray-100 dark:hover:text-primary-400"
               >
                 {link.title}
               </Link>
             ))}
+          </div>
+        </nav>
+        <div className="flex items-center space-x-4">
+          <SearchButton />
+          <ThemeSwitch />
+          <MobileNav />
         </div>
-        <SearchButton />
-        <ThemeSwitch />
-        <MobileNav />
       </div>
     </header>
   )

@@ -1,5 +1,18 @@
 import NextImage, { ImageProps } from 'next/image'
+import React from 'react'
 
-const Image = ({ ...rest }: ImageProps) => <NextImage {...rest} />
+type Props = ImageProps & { className?: string }
 
-export default Image
+export default function Image({ className, loading, ...rest }: Props) {
+  // Default to lazy unless priority is present
+  const priority = (rest as ImageProps).priority
+  const effectiveLoading = priority ? undefined : (loading ?? 'lazy')
+
+  return (
+    <NextImage
+      {...rest}
+      className={className}
+      loading={effectiveLoading as 'lazy' | 'eager' | undefined}
+    />
+  )
+}

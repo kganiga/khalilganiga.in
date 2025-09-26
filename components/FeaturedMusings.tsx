@@ -18,60 +18,61 @@ interface StorySliderProps {
 }
 
 export default function FeaturedMusings({ posts }: StorySliderProps) {
-  // Filter for stories first
   const storyPosts = posts.filter((post) => post.tags?.includes('stories'))
 
   if (storyPosts.length === 0) return null
 
-  // Select the first featured story, fallback to the first story if none are featured
   const featuredStory = storyPosts.find((post) => post.isfeatured) || storyPosts[0]
-
-  // Get remaining stories (excluding the featured one)
   const remainingStories = storyPosts.filter((post) => post.slug !== featuredStory.slug).slice(0, 4)
 
   return (
-    <section className="py-6">
-      <h2 className="pb-4 text-left text-2xl font-bold text-gray-900 dark:text-gray-100">
+    <section className="bg-gradient-to-br from-gray-50 to-gray-100 py-12 dark:from-gray-800 dark:to-gray-900">
+      <h2 className="pb-8 text-center text-4xl font-extrabold text-gray-900 dark:text-gray-100">
         Featured Musings
       </h2>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* Left Side - Big Featured Story */}
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        {/* Featured Story */}
         <div className="md:col-span-2">
-          <Link href={`/blog/${featuredStory.slug}`} className="group">
-            <div className="relative h-[400px] w-full overflow-hidden rounded-xl">
+          <Link
+            href={`/blog/${featuredStory.slug}`}
+            className="group block overflow-hidden rounded-xl shadow-lg dark:shadow-xl dark:ring-1 dark:ring-gray-700"
+          >
+            <div className="relative h-[450px] w-full">
               <Image
                 src={featuredStory.images?.[0] || '/static/placeholder.jpg'}
                 alt={featuredStory.title}
                 width={800}
                 height={500}
                 priority
-                className="h-full w-full object-cover transition-opacity duration-300 ease-in-out"
+                className="h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
               />
-              <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-50 p-4 text-white">
-                <h2 className="font-semibold capitalize leading-tight tracking-tight sm:text-lg md:text-xl">
-                  {featuredStory.title}
-                </h2>
-                <p className="text-sm">{featuredStory.excerpt}</p>
+              <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-6 text-white">
+                <h3 className="text-3xl font-bold">{featuredStory.title}</h3>
+                <p className="mt-3 line-clamp-3 text-sm">{featuredStory.excerpt}</p>
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Right Side - Fixed 4 Small Stories */}
-        <div className="flex flex-col gap-4">
+        {/* Smaller Stories */}
+        <div className="flex flex-col gap-6">
           {remainingStories.map((post) => (
-            <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
-              <div className="relative h-[90px] w-full overflow-hidden rounded-lg">
+            <Link
+              key={post.slug}
+              href={`/blog/${post.slug}`}
+              className="group block overflow-hidden rounded-lg shadow-md hover:shadow-lg dark:shadow-lg dark:ring-1 dark:ring-gray-700"
+            >
+              <div className="relative h-[150px] w-full">
                 <Image
                   src={post.images?.[0] || '/static/placeholder.jpg'}
                   alt={post.title}
                   width={300}
                   height={200}
-                  className="h-full w-full object-cover transition-opacity duration-300 ease-in-out"
+                  className="h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
                 />
-                <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-50 p-2 text-white">
-                  <h3 className="text-lg font-semibold">{post.title}</h3>
+                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-4 text-white">
+                  <h4 className="text-xl font-semibold">{post.title}</h4>
                 </div>
               </div>
             </Link>

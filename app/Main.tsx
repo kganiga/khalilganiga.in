@@ -12,6 +12,7 @@ import FeaturedArticles from '@/components/FeaturedArticles'
 import FeaturedMusings from '@/components/FeaturedMusings'
 import { allStories } from 'contentlayer/generated'
 import Image from 'next/image'
+import LatestArticles from '@/components/LatestArticles'
 
 const MAX_DISPLAY = 5
 const MAX_FEATURED_STORIES = 5
@@ -40,57 +41,7 @@ export default function Home({ posts }) {
             </h6>
           </div>
 
-          <div className="divide-y divide-gray-200 pr-8 dark:divide-gray-700">
-            {!posts.length && (
-              <li className="py-4">
-                <p className="text-gray-600 dark:text-gray-400">No posts found.</p>
-              </li>
-            )}
-            {posts.slice(0, MAX_DISPLAY).map((post) => {
-              const { slug, date, title, summary, tags } = post
-              return (
-                <div key={slug} className="py-6">
-                  <article>
-                    <div className="space-y-8">
-                      <div className="space-y-4">
-                        <div className="flex flex-col gap-4 text-sm text-gray-500 dark:text-gray-400">
-                          <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
-                          <Link href={`/blog/${slug}`}>
-                            <p className="text-lg font-semibold capitalize leading-tight tracking-tight sm:text-lg md:text-xl">
-                              {title}
-                            </p>
-                          </Link>
-                          <p className="mt-3 hidden text-sm  sm:line-clamp-2 lg:block">{summary}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {tags.slice(0, 5).map((tag) => (
-                              <Link
-                                key={tag}
-                                href={`/tags/${tag.replace(/\s+/g, '-').toLowerCase()}`}
-                                className="rounded-full bg-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                              >
-                                {tag.replace(/-/g, ' ')}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                </div>
-              )
-            })}
-            {posts.length > MAX_DISPLAY && (
-              <div className="flex justify-end pt-6">
-                <Link
-                  href="/blog"
-                  className="group inline-flex items-center text-sm transition-colors"
-                >
-                  View archive
-                  <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              </div>
-            )}
-          </div>
+          <LatestArticles posts={posts} />
         </div>
 
         <div className="order-3 hidden space-y-6 lg:block">

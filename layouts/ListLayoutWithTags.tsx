@@ -92,7 +92,7 @@ export default function ListLayoutWithTags({
       <div className="mx-auto max-w-4xl px-4 sm:px-6 xl:px-0">
         <div className="space-y-8 pb-12 pt-16">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl ">
               {title}
             </h1>
           </div>
@@ -140,38 +140,38 @@ export default function ListLayoutWithTags({
                 {displayPosts.map((post) => {
                   const { path, date, title, summary, tags } = post
                   return (
-                    <li key={path} className="py-6 first:pt-0">
+                    <li
+                      key={path}
+                      className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-transform hover:scale-[1.02] dark:border-gray-800 dark:bg-gray-900"
+                    >
                       <article>
-                        <div className="space-y-8">
-                          <div className="space-y-4">
-                            <div className="flex flex-col gap-4 text-sm text-gray-500 dark:text-gray-300">
-                              <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
-                              <h2 className="text-lg font-semibold capitalize leading-tight tracking-tight sm:text-lg md:text-xl">
-                                <Link href={`/${path}`}>{title}</Link>
-                              </h2>
-                              <div className="flex flex-wrap gap-2">
-                                {tags.slice(0, 5).map((tag) => (
-                                  <Link
-                                    key={tag}
-                                    href={`/tags/${tag.replace(/\s+/g, '-').toLowerCase()}`}
-                                    className="rounded-full bg-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                                  >
-                                    {tag.replace(/-/g, ' ')}
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                            <p className="mt-3 hidden text-sm  sm:line-clamp-2 lg:block">
-                              {summary}
-                            </p>
-                          </div>
-                          {/* <Link
-                            href={`/${path}`}
-                            className="group inline-flex items-center text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+                        <div>
+                          <time
+                            dateTime={date}
+                            className="block text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
                           >
-                            Read article
-                            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                          </Link> */}
+                            {formatDate(date, siteMetadata.locale)}
+                          </time>
+                          <h2 className="mt-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+                            <Link
+                              href={`/${path}`}
+                              className="capitalize hover:underline dark:hover:underline-offset-4"
+                            >
+                              {title}
+                            </Link>
+                          </h2>
+                          <p className="mt-4 text-sm text-gray-700 dark:text-gray-300">{summary}</p>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {tags.slice(0, 5).map((tag) => (
+                            <Link
+                              key={tag}
+                              href={`/tags/${tag.replace(/\s+/g, '-').toLowerCase()}`}
+                              className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                              {tag.replace(/-/g, ' ')}
+                            </Link>
+                          ))}
                         </div>
                       </article>
                     </li>

@@ -8,7 +8,9 @@
     "build": "cross-env INIT_CWD=$PWD next build && cross-env NODE_OPTIONS='--experimental-json-modules' node ./scripts/postbuild.mjs",
     "serve": "next start",
     "analyze": "cross-env ANALYZE=true next build",
-    "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts"
+    "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts",
+    "optimize:images": "node ./scripts/optimize-images.js",
+    "convert:mdx-imgs": "node ./scripts/convert-mdx-imgs.js"
   },
   "dependencies": {
     "@google-analytics/data": "^5.1.0",
@@ -19,6 +21,7 @@
     "autoprefixer": "^10.4.13",
     "body-scroll-lock": "^4.0.0-beta.0",
     "contentlayer2": "0.5.3",
+    "date-fns": "^4.1.0",
     "esbuild": "0.20.2",
     "framer-motion": "^12.6.2",
     "github-slugger": "^2.0.0",
@@ -52,6 +55,7 @@
   },
   "devDependencies": {
     "@svgr/webpack": "^8.0.1",
+    "@types/date-fns": "^2.5.3",
     "@types/mdx": "^2.0.12",
     "@types/react": "^18.2.73",
     "@typescript-eslint/eslint-plugin": "^8.12.0",
