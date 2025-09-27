@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex flex-col items-center gap-3 sm:flex-row">
           <div className="flex items-center gap-3">
-            <Link href="/" className=" text-sm font-medium text-gray-600 sm:inline-block">
+            <Link href="/" className="text-sm font-medium text-gray-600 sm:inline-block">
               {siteMetadata.title}
             </Link>
           </div>
