@@ -12,7 +12,7 @@ export default function Footer() {
               {siteMetadata.title}
             </Link>
           </div>
-          <p className="text-sm text-gray-600 text-center sm:text-left">{`© ${new Date().getFullYear()}`}</p>
+          <p className="text-center text-sm text-gray-600 sm:text-left">{`© ${new Date().getFullYear()}`}</p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600 sm:justify-start">
@@ -34,7 +34,7 @@ export default function Footer() {
           </Link>
         </div>
 
-        <div className="flex justify-center items-center gap-4 sm:justify-start">
+        <div className="flex items-center justify-center gap-4 sm:justify-start">
           <Link
             className="text-gray-500 hover:text-primary-500"
             href={siteMetadata.facebook ?? '#'}
