@@ -32,9 +32,12 @@ const Header = () => {
               <Link
                 key={link.title}
                 href={link.href}
-                className="font-medium text-gray-900 hover:text-primary-500 dark:text-gray-100 dark:hover:text-primary-400"
+                className="font-medium text-gray-900 relative group dark:text-gray-100"
               >
-                {link.title}
+                <span className="transition-colors group-hover:text-primary-500 dark:group-hover:text-primary-400">
+                  {link.title}
+                </span>
+                <span className="absolute -bottom-1.5 left-0 h-[2px] w-0 bg-gradient-to-r from-primary-500/0 via-primary-500 to-primary-500/0 transition-all duration-300 ease-in-out group-hover:w-full dark:from-primary-400/0 dark:via-primary-400 dark:to-primary-400/0" />
               </Link>
             ))}
           </div>

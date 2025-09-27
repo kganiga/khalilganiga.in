@@ -6,16 +6,16 @@ export default function Footer() {
   return (
     <footer className="bg-transparent text-gray-600">
       <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
           <div className="flex items-center gap-3">
-            <Link href="/" className="hidden text-sm font-medium text-gray-600 sm:inline-block">
+            <Link href="/" className=" text-sm font-medium text-gray-600 sm:inline-block">
               {siteMetadata.title}
             </Link>
           </div>
-          <p className="text-sm text-gray-600">{`© ${new Date().getFullYear()}`}</p>
+          <p className="text-sm text-gray-600 text-center sm:text-left">{`© ${new Date().getFullYear()}`}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+        <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600 sm:justify-start">
           <Link href="/privacy" className="hover:text-primary-500" aria-label="privacy-policy">
             Privacy
           </Link>
@@ -34,10 +34,10 @@ export default function Footer() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex justify-center items-center gap-4 sm:justify-start">
           <Link
             className="text-gray-500 hover:text-primary-500"
-            href="https://facebook.com/khalilbasha.g"
+            href={siteMetadata.facebook ?? '#'}
             aria-label="facebook-link"
           >
             <svg fill="currentColor" viewBox="0 0 24 24" className="h-5 w-5">
@@ -46,7 +46,7 @@ export default function Footer() {
           </Link>
           <Link
             className="text-gray-500 hover:text-primary-500"
-            href="https://twitter.com/Im_Khalil"
+            href={siteMetadata.twitter ?? '#'}
             aria-label="twitter-profile"
           >
             <svg fill="currentColor" viewBox="0 0 24 24" className="h-5 w-5">

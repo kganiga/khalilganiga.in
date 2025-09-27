@@ -141,7 +141,7 @@ const BackgroundAnimation = memo(() => {
 
   return (
     // NEW: Added `filter blur-sm` for a depth-of-field effect
-    <div className="pointer-events-none absolute inset-0 z-0 blur-sm filter">
+    <div className="pointer-events-none absolute inset-0 z-0 blur-[1px] filter">
       {characters.map((item) => (
         <span
           key={item.id}
