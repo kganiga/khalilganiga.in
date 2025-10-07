@@ -1,0 +1,105 @@
+---
+title: Why Attackers Prefer Path Based Servlets in AEM
+date: '2025-10-07'
+tags: ['AEM', 'Tech Information', 'How To', 'Tutorials','Best Practices']
+draft: false
+summary: Path based servlets in AEM are a security risk. Resource-type servlets enforce permissions and keep your app safe.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+As developers, we know that registering servlets using `sling.servlet.resourceTypes` is the standard and recommended way in AEM. But have you ever stopped to consider why the alternative, `sling.servlet.paths`, is so strongly discouraged? Beyond just being a best practice, understanding _why_ one so much better reveals critical security lessons.
+
+Let's start by looking at the benefits of path-based servlets, then explore why those benefits are far outweighed by the risks from a security and attacker perspective.
+
+**The Benefits of Path Based Servlets**
+
+Path based servlets seem simple and easy to use.
+
+**Simple Setup:** A path-based servlet can be set up with a single, easy-to-remember path, like ```/bin/myservlet```. This can feel quicker for one-off tasks.
+
+**Explicit Control:** Developers have total control over the URL. They know exactly where the servlet can be accessed, which can make debugging seem more straightforward.
+
+**Global Access:** It can be used for site-wide or global utilities that don't depend on a specific content component.
+
+But this simplicity comes at a high price, one that attacker is all too happy to collect.
+
+**The Attacker's Perspective:**
+
+From a attacker's point of view, a path-based servlet isn't just a convenient endpoint—it's a known, predictable entry point that exists outside AEM's built-in security. They provide a direct path to your code, bypassing the platform's core defenses.
+
+1. Bypassing JCR ACLs:
+
+AEM's built-in security relies on JCR Access Control Lists (ACLs), which define who can access specific content. When a request comes in for a content page, Sling checks the ACLs to see if the user has permission.
+
+Path based servlets, however, bypass this entire process. The request goes directly to the servlet code, leaving the servlet itself responsible for all security. If a developer forgets a single permission check, the gate is wide open.
+
+**Example**:  A data leak
+
+Consider a path-based servlet at `/bin/mysite/email-list` that returns a JSON list of customer emails.
+
+The developer assumes, "This is only for an internal tool, so it doesn't need much security."
+
+Attacker uses an automated tool to scan a site for common servlet paths.
+
+The hacker finds `/bin/mysite/email-list` and sends a request.
+
+Because there's no JCR ACL protecting the path and the servlet lacks a manual security check, the hacker obtains a list of customers' emails.
+
+2. Manual configuration headaches
+
+Beyond writing the Java code, a developer using path based servlets must perform manual configuration steps on AEM and the Dispatcher. These steps are easy to forget and provide more chances for error.
+
+**Dispatcher Filters:** The servlet's path must be manually added to the Dispatcher's filter rules to allow the request to pass through. Most secure Dispatcher setups use an "allowlist" approach, where all paths are denied by default. Without adding an explicit filter for your servlet's path, all requests will be blocked.
+
+**OSGi Configuration:** Some AEM features, such as the `Apache Sling Servlet/Script Resolver and Error Handler`, need to be configured via OSGi to allow custom paths to be resolved. Opening up these paths makes the system more vulnerable.
+
+3. Discovery through brute-force:
+
+Path based servlets often follow common patterns, such as being placed under /bin, /services, or /api. Attackers are aware of this and use automated "fuzzing" tools to test numerous path combinations, looking for unprotected endpoints. They don't need to be authenticated users or understand your codebase to find these weak spots.
+
+**Example:**  A hacker knows that AEM sites frequently have servlets in the /bin folder. They run a script that tries different paths:
+
+yoursite.com/bin/search
+
+yoursite.com/bin/query
+
+yoursite.com/bin/admin-tools
+
+yoursite.com/bin/internal-data
+
+If one of these endpoints exists and is unprotected, the attacker has successfully gained access.
+
+**The Secure Alternative:**
+
+This method links your servlet directly to an existing AEM component or resource type, not a hardcoded path.
+
+**How it Works Securely:**
+
+ - **Automatic ACL Enforcement:** The Sling engine checks JCR ACLs on the resource before running the servlet. If the user doesn't have read access to the resource, the servlet never runs.
+
+ - **Content-Based Access:** An attacker can't simply guess a URL. They would need to know the path to a valid resource and have permission to access it.
+
+ - **Contextual Logic:** The servlet operates within the context of a specific resource, making its purpose clear and its security model easy to understand.
+
+**Bonus security tip**: Validate and sanitize all inputs/request params.
+
+Regardless of whether you use a path or a resource type, you should always validate and sanitize request parameters to prevent common attacks like Cross-Site Scripting (XSS) and command injection. Never trust user input, even from an internal-only servlet.
+
+**Example**: Always use AEM's built-in XSSAPI to protect against malicious user input.
+
+    String userInput = request.getParameter("userInput");
+    
+    _// Instead of using userInput directly, sanitize it first_
+    
+    String sanitizedInput = xssApi.getValidHtml(userInput);
+    
+    _// ... use the sanitizedInput safely_
+
+Use code with caution.
+
+**Conclusion**
+
+Path-based servlets, despite their apparent simplicity, create vulnerabilities that are easily discovered and exploited. They bypass AEM's core security model and place the responsibility for security solely on the developer, increasing the likelihood of errors. The manual configuration required adds another layer of risk.
+
+By choosing `resource-type servlets`, you leverage AEM's built-in security, automatically enforcing permissions and significantly reducing the attack surface. This is not merely a best practice; it's a fundamental security measure every AEM developer should follow to protect applications from potential attacks.
