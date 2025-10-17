@@ -1,0 +1,303 @@
+---
+title: Most Common Things AEM Developers Ignore When Using Query Builder and SQL2 Queries
+date: '2025-10-17'
+tags: ['AEM', 'Query Builder', 'Performance', 'Best Practices', 'Memory Optimization']
+draft: false
+summary: Most AEM performance issues stem from inefficient query usage. This post explains when to use Query Builder vs SQL2, highlights common mistakes like missing indexes, fetching too much data, and running queries in loops, and provides practical best practices for optimized, scalable, and memory-safe queries in asset-heavy projects.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+One of the most overlooked areas in AEM performance is query development. Developers often underestimate how expensive a poorly written query can be, both in CPU time and memory consumption.
+
+Over the years, I’ve seen AEM projects slow or leak memory because of query-related mistakes. In this post, we’ll cover the **most common AEM query anti-patterns** that cause performance bottlenecks and how to fix them — complete with real-world code examples and best practices.
+
+## When to Use Query Builder vs. JCR-SQL2
+
+Most developers either don’t fully understand when to use Query Builder vs. SQL2, or they simply follow the existing codebase without questioning whether the chosen approach is right for the scenario. As a result, we see unnecessary query executions, missing indexes, memory leaks, and massive repository traversals — all of which silently eat away at system performance.
+
+Even during code reviews, query-related inefficiencies are often missed because they appear “functional.” Understanding the difference between Query Builder and JCR-SQL2 is crucial for writing efficient, predictable queries.
+
+| Use Case                        | Best Option                                | Why                                                   |
+| ------------------------------- | ------------------------------------------ | ----------------------------------------------------- |
+| Dynamic, author-driven searches | Query Builder                              | Simple predicate syntax and flexible filtering        |
+| Backend jobs, scheduled tasks   | SQL2                                       | Deterministic, index-aware, faster for static queries |
+| Full-text search                | Lucene-backed QueryBuilder or `CONTAINS()` | Uses Lucene’s optimized analyzers                     |
+| Known node path                 | Resource API                               | Direct, zero-query access                             |
+
+Do not simply follow existing code base patterns. Evaluate whether Query Builder or SQL2 fits your data access needs.
+
+## Overusing Queries When Paths Are Known
+
+If the content path is already known, there is no need to run a query.  
+Each query adds unnecessary overhead and consumes repository resources.
+
+### Bad Practice
+
+```java
+String sql2Query = "SELECT * FROM [nt:base] AS s WHERE ISDESCENDANTNODE(s, '/content/mysite/en/home') AND NAME() = 'header'";
+
+```
+
+### Good Practice
+
+```java
+Resource pageResource = resourceResolver.getResource("/content/mysite/en/home");
+Resource headerResource = pageResource.getChild("jcr:content/header");
+
+```
+
+Direct path-based access is immediate and does not depend on indexes or query execution.
+
+## Missing Oak Indexes
+
+Without an Oak index, AEM must traverse large sections of the repository, leading to severe performance degradation.
+
+### Bad Practice
+
+```java
+String query = "SELECT * FROM [nt:unstructured] WHERE [sling:resourceType] = 'mysite/components/teaser'";
+
+```
+
+### Good Practice
+
+Define a custom property index under `/oak:index`:
+
+```text
+/oak:index/slingResourceTypeIdx
+    - jcr:primaryType = "oak:QueryIndexDefinition"
+    - type = "property"
+    - async = ["async"]
+    + propertyNames
+        - sling:resourceType
+    - reindex = true
+
+```
+
+Use the Query Performance Tool or the Explain Plan console to confirm that an index is being used.  
+If you see “Traversal” in the output, the query is not optimized.
+
+## Fetching Too Much Data
+
+Queries that use `SELECT *` fetch all node properties and inflate memory usage.  
+SQL2 always returns node references, so explicitly selecting required properties improves efficiency.
+
+### Bad Practice
+
+```java
+map.put("p.limit", "-1"); // Fetches all nodes
+
+```
+
+### Good Practice
+
+```java
+map.put("p.limit", "10");
+map.put("p.guessTotal", "true");
+map.put("p.properties", "jcr:path jcr:content/jcr:title");
+
+```
+
+The `p.properties` option controls which properties are returned in the result map, not which are loaded from the repository.  
+Always limit results and specify the fields you need.
+
+## Using Inefficient Operators and Deprecated APIs
+
+Some query operators block index usage or force repository scans.
+
+### Avoid
+
+- XPath queries (deprecated and slower)
+- `LIKE '%value%'` patterns (prevent index usage unless analyzer supports wildcards)
+- Property functions like `LOWER()` or `UPPER()` in `WHERE` clauses
+
+### Prefer
+
+- JCR-SQL2 or QueryBuilder with indexed predicates
+- Pre-normalized lowercase text to avoid runtime functions
+- Lucene’s `CONTAINS()` for full-text searches
+
+Example:
+
+```java
+String query = "SELECT * FROM [cq:PageContent] WHERE CONTAINS([jcr:content/jcr:title], 'marketing')";
+
+```
+
+## Running Queries Inside Loops
+
+Each iteration of a loop that runs a query introduces a new repository call.  
+This can multiply load and slow down execution dramatically.
+
+### Bad Practice
+
+```java
+for (String tag : tags) {
+  String sql2 = "SELECT * FROM [cq:PageContent] WHERE [cq:tags] = '" + tag + "'";
+  queryManager.createQuery(sql2, Query.JCR_SQL2).execute();
+}
+
+```
+
+### Good Practice
+
+```java
+String sql2 = "SELECT * FROM [cq:PageContent] WHERE [cq:tags] INCLUDES ('news:sports') OR [cq:tags] INCLUDES ('news:finance')";
+queryManager.createQuery(sql2, Query.JCR_SQL2).execute();
+
+```
+
+Batch conditions instead of executing a query for each loop iteration.
+
+## Re-executing the Same Query Object
+
+Each call to `execute()` triggers a new query. Always reuse the result instead of re-running it.
+
+### Bad Practice
+
+```java
+Query query = queryBuilder.createQuery(PredicateGroup.create(map), session);
+query.execute();
+processResult(query.execute()); // Executes twice
+
+```
+
+### Good Practice
+
+```java
+SearchResult result = query.execute();
+processResult(result);
+
+```
+
+## Missing Pagination
+
+Queries without pagination (for example `p.limit=-1`) can consume significant memory and impact stability.
+
+### Bad Practice
+
+```java
+map.put("path", "/content/dam/myproject");
+map.put("type", "dam:Asset");
+SearchResult result = queryBuilder.createQuery(PredicateGroup.create(map), session).execute();
+
+```
+
+### Good Practice
+
+```java
+map.put("p.limit", "100");
+map.put("p.offset", "0");
+
+```
+
+Always use pagination for asset-heavy or list-based queries.
+
+## Ignoring AEM’s Query Tools
+
+AEM provides several built-in tools for analyzing and optimizing query performance.
+
+| Tool                   | Path                                                                                    | Purpose                              |
+| ---------------------- | --------------------------------------------------------------------------------------- | ------------------------------------ |
+| Query Debugger         | `/libs/cq/search/content/querydebug.html` or `/libs/granite/ui/content/querydebug.html` | View generated SQL2 queries          |
+| Query Performance Tool | `/libs/granite/operations/content/diagnosistools/queryPerformance.html`                 | Measure query execution time         |
+| Explain Plan           | `/system/console/queryplan`                                                             | Check if queries use indexes         |
+| Index Console          | `/system/console/oak/indexes`                                                           | Inspect and verify index definitions |
+
+Inspect and verify index definitions
+
+Use these during development and testing to identify slow or unindexed queries.
+
+## Overusing Query Builder in Asset-heavy Projects
+
+Query Builder is convenient, but in asset-heavy projects it can generate inefficient SQL2 under the hood.  
+For large DAM repositories, SQL2 is usually faster and more predictable.
+
+### Bad Practice
+
+```java
+Map<String, String> map = new HashMap<>();
+map.put("path", "/content/dam/myproject");
+map.put("type", "dam:Asset");
+map.put("property", "jcr:content/metadata/pr:category");
+map.put("property.value", "campaign");
+queryBuilder.createQuery(PredicateGroup.create(map), session).execute();
+
+```
+
+### Good Practice
+
+```java
+String stmt = "SELECT * FROM [dam:Asset] AS s " +
+              "WHERE ISDESCENDANTNODE(s, '/content/dam/myproject') " +
+              "AND s.[jcr:content/metadata/pr:category] = 'campaign'";
+session.getWorkspace().getQueryManager().createQuery(stmt, Query.JCR_SQL2).execute();
+
+```
+
+Query Builder internally translates predicates into SQL2.  
+Its performance depends on how well the predicates align with existing indexes.
+
+## Monitoring Index Health and Reindexing
+
+Even well-defined indexes can degrade if they fall behind.
+
+If logs show:
+
+```
+WARN org.apache.jackrabbit.oak.plugins.index.AsyncIndexUpdate - Indexing is lagging behind
+
+```
+
+trigger a reindex:
+
+```bash
+curl -u admin:admin -F "reindex=true" http://localhost:4502/oak:index/myIndex
+
+```
+
+Use `async = ["async"]` for non-blocking updates and monitor index lag regularly.
+
+## Avoid Queries Entirely When Possible
+
+When paths are predictable, use direct API access instead of queries.
+
+```java
+resourceResolver.getResource("/content/mysite/en/page");
+pageManager.getPage("/content/mysite/en/page");
+
+```
+
+Direct access avoids traversal and eliminates query overhead.
+
+## Quick Reference Summary
+
+| Problem                 | Impact               | Solution                                      |
+| ----------------------- | -------------------- | --------------------------------------------- |
+| Overusing queries       | High CPU usage       | Use path-based access                         |
+| Missing index           | Repository traversal | Create property index                         |
+| Fetching all properties | Memory waste         | Use `p.properties`                            |
+| Inefficient operators   | Slow performance     | Use SQL2 or Lucene                            |
+| Queries in loops        | Repository overload  | Combine filters                               |
+| Re-executing queries    | Double cost          | Execute once                                  |
+| No pagination           | Memory spikes        | Use `p.limit`                                 |
+| Unclosed resolvers      | Memory leak          | Use try-with-resources                        |
+| Wrong API choice        | Inefficiency         | Choose Query Builder or SQL2 based on context |
+| Ignored tools           | Undetected issues    | Use AEM query tools                           |
+
+## Final Thoughts
+
+Most AEM performance problems are not caused by the platform but by inefficient query practices.  
+Understanding when to use SQL2, Query Builder, or direct resource access leads to faster, more scalable applications.
+
+Include query efficiency in your code review checklist to improve system health and maintain consistent performance under load.
+
+---
+
+### Recommended Reading
+
+- [AEM QueryBuilder API Documentation](https://experienceleague.adobe.com/docs/experience-manager-65/developing/platform/query-builder/querybuilder-api.html)
+- [Oak Indexing Guide](https://jackrabbit.apache.org/oak/docs/query/indexing.html)
+- [AEM Query Performance Tool](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/operations/query-and-indexing-best-practices#query-performance-tool)

@@ -1,13 +1,14 @@
 ---
 title: AEM Best Practices - When to Close Your ResourceResolver and When Not To
 date: '2025-10-09'
-tags: ['AEM', 'Best Practices','Tech Information', 'How To', 'Tutorials']
+tags: ['AEM', 'Best Practices', 'Tech Information', 'How To', 'Tutorials']
 draft: false
 summary: Check out this unique collection of useful cURL commands for Adobe Experience Manager (AEM). These commands, gathered from various sources, will help make your AEM tasks easier
 images: []
 layout: PostLayout
 isfeatured: false
 ---
+
 If you're an AEM developer, you've definitely used a `ResourceResolver`. It's a key tool that lets you find, read, and change content in the AEM repository.
 
 But there’s a simple rule about using it that many developers overlook — and it can cause big problems for your website:
@@ -16,15 +17,15 @@ But there’s a simple rule about using it that many developers overlook — and
 
 Ignoring this rule can lead to resource leaks, which are a common cause of **performance issues** and even **server crashes** in AEM.
 
-So, how do you know if you need to close a ResourceResolver? 
+So, how do you know if you need to close a ResourceResolver?
 
 The answer depends on how you got it in the first place.
 
-##  When You MUST Close It
+## When You MUST Close It
 
 If you are using a Java OSGi service or a background task, you will create a new ResourceResolver using the ResourceResolverFactory.
 
-This creates a fresh connection to the repository.  If you don't close this connection, it stays open and takes up system resources.  
+This creates a fresh connection to the repository. If you don't close this connection, it stays open and takes up system resources.
 
 Imagine leaving a faucet running — eventually, you'll flood the room.
 
@@ -43,7 +44,6 @@ try (ResourceResolver resolver = resolverFactory.getServiceResourceResolver(null
 ⚠️ Use code with caution.
 
 ```
- 
 
 ## When You MUST NOT Close It
 
@@ -62,24 +62,22 @@ Any other components or services that run later in the same request will find a 
 
 So, if you get your `ResourceResolver` from one of these places, **do NOT close it**:
 
--   From a servlet request:
-    
-    ```java
-    slingRequest.getResourceResolver()
-    
-    ```
-    
--   Inside a Sling Model or a component (e.g., via injection)
-    
--   By adapting an existing resource:
-    
-    ```java
-    resource.adaptTo(ResourceResolver.class)
-    
-    ```
-    
+- From a servlet request:
 
-##  What Happens When Things Go Wrong?
+  ```java
+  slingRequest.getResourceResolver()
+
+  ```
+
+- Inside a Sling Model or a component (e.g., via injection)
+- By adapting an existing resource:
+
+  ```java
+  resource.adaptTo(ResourceResolver.class)
+
+  ```
+
+## What Happens When Things Go Wrong?
 
 ### 1. If You Don’t Close a Factory-Created Resolver (A Leak)
 
@@ -88,11 +86,11 @@ Each open resolver consumes memory and system resources.
 Over time, an accumulation of unclosed resolvers will cause AEM to slow down.
 
 **System Instability:**  
-If the leaks are bad enough, they can cause an  `OutOfMemoryError` and crash the AEM instance.
+If the leaks are bad enough, they can cause an `OutOfMemoryError` and crash the AEM instance.
 
 AEM has a built-in mechanism to warn you about unclosed resolvers.
 
-####   What to Look for in the Logs
+#### What to Look for in the Logs
 
 ```
 Unclosed ResourceResolver was created here:
@@ -113,7 +111,7 @@ This will immediately throw an `IllegalStateException`.
 **Page Rendering Failures:**  
 This typically causes a major error on the page where the code is executing, and the component will fail to render properly.
 
-####  What to Look for in the Logs
+#### What to Look for in the Logs
 
 ```
 java.lang.IllegalStateException: This resource resolver has already been closed.
@@ -125,19 +123,17 @@ at org.apache.sling.resourceresolver.impl.ResourceResolverImpl.checkLive(Resourc
 The stack trace will show a call to a resolver method (`getResource`, `map`, etc.) that fails because the resolver was already shut down.  
 You should trace the stack to see which component or service mistakenly closed the resolver prematurely.
 
-##  A Simple Test to Remember the Rule
+## A Simple Test to Remember the Rule
 
 If you're ever unsure whether to close your resolver, just ask yourself this question:
 
 > **"Did I get this resolver from the ResourceResolverFactory?"**
 
--    If the answer is **yes**, the resolver was opened and **must be closed**. Use **try-with-resources** for safety.
-    
--    If the answer is **no**, AEM opened it (e.g., from the `SlingHttpServletRequest`), and **AEM will handle closing it**.
+- If the answer is **yes**, the resolver was opened and **must be closed**. Use **try-with-resources** for safety.
 
+- If the answer is **no**, AEM opened it (e.g., from the `SlingHttpServletRequest`), and **AEM will handle closing it**.
 
-##  Final Thoughts
+## Final Thoughts
 
 AEM developers often underestimate how easy it is to cause performance issues by mishandling `ResourceResolver`.  
 By simply following this one rule — **close it if you opened it; don’t if AEM gave it to you** — you’ll prevent leaks, improve stability, and ensure smooth performance in your AEM environment.
-

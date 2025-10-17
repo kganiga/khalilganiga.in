@@ -1,13 +1,14 @@
 ---
 title: Why Attackers Prefer Path Based Servlets in AEM
 date: '2025-10-07'
-tags: ['AEM', 'Tech Information', 'How To', 'Tutorials','Best Practices']
+tags: ['AEM', 'Tech Information', 'How To', 'Tutorials', 'Best Practices']
 draft: false
 summary: Path based servlets in AEM are a security risk. Resource-type servlets enforce permissions and keep your app safe.
 images: []
 layout: PostLayout
 isfeatured: false
 ---
+
 As developers, we know that registering servlets using `sling.servlet.resourceTypes` is the standard and recommended way in AEM. But have you ever stopped to consider why the alternative, `sling.servlet.paths`, is so strongly discouraged? Beyond just being a best practice, understanding _why_ one so much better reveals critical security lessons.
 
 Let's start by looking at the benefits of path-based servlets, then explore why those benefits are far outweighed by the risks from a security and attacker perspective.
@@ -16,7 +17,7 @@ Let's start by looking at the benefits of path-based servlets, then explore why 
 
 Path based servlets seem simple and easy to use.
 
-**Simple Setup:** A path-based servlet can be set up with a single, easy-to-remember path, like ```/bin/myservlet```. This can feel quicker for one-off tasks.
+**Simple Setup:** A path-based servlet can be set up with a single, easy-to-remember path, like `/bin/myservlet`. This can feel quicker for one-off tasks.
 
 **Explicit Control:** Developers have total control over the URL. They know exactly where the servlet can be accessed, which can make debugging seem more straightforward.
 
@@ -34,7 +35,7 @@ AEM's built-in security relies on JCR Access Control Lists (ACLs), which define 
 
 Path based servlets, however, bypass this entire process. The request goes directly to the servlet code, leaving the servlet itself responsible for all security. If a developer forgets a single permission check, the gate is wide open.
 
-**Example**:  A data leak
+**Example**: A data leak
 
 Consider a path-based servlet at `/bin/mysite/email-list` that returns a JSON list of customer emails.
 
@@ -58,7 +59,7 @@ Beyond writing the Java code, a developer using path based servlets must perform
 
 Path based servlets often follow common patterns, such as being placed under /bin, /services, or /api. Attackers are aware of this and use automated "fuzzing" tools to test numerous path combinations, looking for unprotected endpoints. They don't need to be authenticated users or understand your codebase to find these weak spots.
 
-**Example:**  A hacker knows that AEM sites frequently have servlets in the /bin folder. They run a script that tries different paths:
+**Example:** A hacker knows that AEM sites frequently have servlets in the /bin folder. They run a script that tries different paths:
 
 yoursite.com/bin/search
 
@@ -76,11 +77,11 @@ This method links your servlet directly to an existing AEM component or resource
 
 **How it Works Securely:**
 
- - **Automatic ACL Enforcement:** The Sling engine checks JCR ACLs on the resource before running the servlet. If the user doesn't have read access to the resource, the servlet never runs.
+- **Automatic ACL Enforcement:** The Sling engine checks JCR ACLs on the resource before running the servlet. If the user doesn't have read access to the resource, the servlet never runs.
 
- - **Content-Based Access:** An attacker can't simply guess a URL. They would need to know the path to a valid resource and have permission to access it.
+- **Content-Based Access:** An attacker can't simply guess a URL. They would need to know the path to a valid resource and have permission to access it.
 
- - **Contextual Logic:** The servlet operates within the context of a specific resource, making its purpose clear and its security model easy to understand.
+- **Contextual Logic:** The servlet operates within the context of a specific resource, making its purpose clear and its security model easy to understand.
 
 **Bonus security tip**: Validate and sanitize all inputs/request params.
 
@@ -89,11 +90,11 @@ Regardless of whether you use a path or a resource type, you should always valid
 **Example**: Always use AEM's built-in XSSAPI to protect against malicious user input.
 
     String userInput = request.getParameter("userInput");
-    
+
     _// Instead of using userInput directly, sanitize it first_
-    
+
     String sanitizedInput = xssApi.getValidHtml(userInput);
-    
+
     _// ... use the sanitizedInput safely_
 
 Use code with caution.

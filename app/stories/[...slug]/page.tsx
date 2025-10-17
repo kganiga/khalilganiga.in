@@ -43,32 +43,33 @@ export async function generateMetadata(props: {
   if (post.images) {
     imageList = typeof post.images === 'string' ? [post.images] : post.images
   }
-  const ogImages = imageList.map((img) => {
-    return {
-      url: img.includes('http') ? img : siteMetadata.siteUrl + img,
-    }
-  })
+  const ogImages = imageList.map((img) => (img.includes('http') ? img : siteMetadata.siteUrl + img))
+
+  const canonicalUrl = `${siteMetadata.siteUrl}/${post.path}`
 
   return {
-    title: post.title,
+    title: `${post.title} | ${siteMetadata.title}`,
     description: post.summary,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
-      title: post.title,
+      title: `${post.title} | ${siteMetadata.title}`,
       description: post.summary,
       siteName: siteMetadata.title,
       locale: 'en_US',
       type: 'article',
       publishedTime: publishedAt,
       modifiedTime: modifiedAt,
-      url: './',
-      images: ogImages,
+      url: canonicalUrl,
+      images: ogImages.map((url) => ({ url })),
       authors: authors.length > 0 ? authors : [siteMetadata.author],
     },
     twitter: {
       card: 'summary_large_image',
-      title: post.title,
+      title: `${post.title} | ${siteMetadata.title}`,
       description: post.summary,
-      images: imageList,
+      images: ogImages,
     },
   }
 }

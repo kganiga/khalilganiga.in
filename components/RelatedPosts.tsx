@@ -43,7 +43,7 @@ const RelatedPosts = ({ tags, currentSlug }: RelatedPostsProps) => {
             <span className="mr-2 text-sm text-gray-500 dark:text-gray-400">{index + 1}.</span>
             <Link
               href={`/${item.type.toLowerCase() === 'blog' ? 'blog' : 'stories'}/${item.slug}`}
-              className="text-base font-medium text-primary-600 hover:underline dark:text-primary-400"
+              className="text-base font-medium capitalize text-primary-600 hover:underline dark:text-primary-400"
             >
               {item.title}
             </Link>
