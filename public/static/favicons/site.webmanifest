@@ -4,8 +4,8 @@
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Quasilinear Thoughts",
-  "short_name": "QT",
+  "name": "Khalil Ganiga",
+  "short_name": "Khalil Ganiga",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
