@@ -1,0 +1,170 @@
+---
+title: AEM Dispatcher Series 1 - A Developer’s Guide to What It Is and Why You Should Care
+date: '2025-10-24'
+tags: ['Dispatcher','Tutorial','AEM''How To','Security','Caching','Performance']
+draft: false
+summary: Learn about the AEM Dispatcher in perspective of developer, why it exists, and how it works as both a caching and security layer.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+If you’re an AEM developer, chances are you’ve heard about the **AEM Dispatcher**. You might know it as a **caching and load-balancing tool** — and that’s true. But how does it really work under the hood? And why should you, as a developer, care about something usually managed by DevOps or Adobe Managed Services (AMS)?
+
+This series is here to answer that.
+
+## **Why Developers Should Care About the Dispatcher**
+
+In many projects, Dispatcher configuration is owned by DevOps or AMS engineers. But even if you don’t deploy it yourself, it directly impacts how your code behaves in production.
+
+Many AEM issues that feel like “code bugs” — components not updating, pages loading slowly, or servlets being blocked — are often caused by the Dispatcher.
+
+Understanding how it works helps you:
+
+-  Design components that behave correctly when cached
+-   Debug faster    
+-   Communicate more effectively with Ops teams
+
+In short: treat the Dispatcher as part of your application.
+
+## **What Exactly Is the AEM Dispatcher?**
+
+The AEM Dispatcher is a module for Apache HTTPD (or IIS), adding AEM-specific capabilities while working alongside other Apache modules like SSL or SSI. Think of it as:
+
+-   A photocopier that hands out ready-made copies of pages (**caching**)    
+-   A smart bouncer that decides who gets access (**reverse proxy / security filtering**)
+    
+
+It makes your AEM site **faster**, **safer**, and **more scalable**.
+
+## **Where the Dispatcher Fits in AEM Architecture**
+
+```text
+[Author] ---> [Publish] ---> [Dispatcher] ---> [End User's Browser]
+
+```
+
+-   **Author:** Where content creators publish pages
+    
+-   **Publish:** The live instance serving content
+    
+-   **Dispatcher:** A web-server module that caches responses and filters requests
+    
+-   **End User:** The visitor viewing your site
+    
+
+Every request from a user passes through the Dispatcher before reaching AEM Publish. It’s both **gatekeeper** and **accelerator**.
+
+## **The Two Core Jobs of the Dispatcher**
+
+### **1. Caching — The “Photocopier” for Performance**
+
+Caching is what makes AEM sites fast.
+
+Imagine a cafe: every morning, customers order the same coffee. Instead of making each one from scratch, you prepare a few in advance. That’s what caching does — keeps ready-made copies of pages, so the next visitor doesn’t wait for AEM Publish to generate them.
+(Cache is nothing but a static file stored under a filesystem)
+
+**How it works:**
+
+1.  User requests `/content/mysite/en/home.html`
+    
+2.  Dispatcher checks if a cached copy exists
+    
+    -   Yes → serve it from disk (fast)        
+    -   No →forward to AEM Publish, store the response for next time        
+
+**Example cache directory:**
+
+```bash
+/cache
+└── content
+    └── mysite
+        └── en
+            └── home.html
+
+```
+
+That file is literally a cached “photocopy” of your page.
+
+### **2. Security Filtering — The “Bouncer” at the Door**
+
+Before a request reaches Publish, Dispatcher checks **filter rules** in `dispatcher.any`.
+
+It blocks access to sensitive paths like:
+
+-   `/system/console`    
+-   `/crx/de`    
+-   `/bin/querybuilder.json`    
+-   `/etc/packages/*.zip`
+    
+
+**Example filter rules:**
+
+```apache
+/filter {
+  /0001 { /type "deny"  /url "/crx/*" }
+  /0002 { /type "allow" /url "/content/*" }
+}
+
+```
+
+If a request tries `/crx/de`, Dispatcher blocks it **before AEM Publish sees it**.
+
+## **Why Developers Need to Understand the Dispatcher**
+
+Dispatcher configuration directly affects code behavior in production. Common issues:
+
+**Scenario 1: Component Isn’t Updating**
+
+-   You deploy a new version, but the site still shows old content.    
+-   **Cause:** stale cached files. Cache flush or updating the `.stat` file fixes it.
+    
+
+**Scenario 2: Page Is Too Slow**
+
+-   Some pages crawl while others are fast.    
+-   **Cause:** missing cache rules or uncached query parameters. Once cached, pages load instantly.
+    
+
+**Scenario 3: Getting a 403 Forbidden**
+
+-   Your servlet `/bin/my-servlet` doesn’t work.
+    
+-   **Cause:** path not whitelisted in filters.
+    
+-   Fix:
+    
+
+```apache
+/0040 { /type "allow" /url "/bin/my-servlet" }
+
+```
+
+> **Best practice:** avoid path-based servlets for security reasons. [Learn why attackers prefer path-based servlets in AEM](/blog/why-attackers-prefer-path-based-servlets-in-aem).
+
+## **Dispatcher Request Flow**
+
+```text
+User Request
+    ↓
+[Dispatcher]
+    ├── Security Check (/filter)
+    │      ├─ Block → 403 Forbidden
+    │      └─ Allow → Continue
+    │
+    ├── Cache Check (/cache)
+    │      ├─ Cached → Serve static file
+    │      └─ Not Cached → Forward to AEM Publish
+    ↓
+[AEM Publish Instance]
+
+```
+
+
+The Dispatcher is both **gatekeeper** and **cache manager**, deciding who gets in and how fast they’re served.
+
+## **Next Steps**
+
+Now that you know what the Dispatcher is, why it matters, and where it fits, it’s time to **dig into `dispatcher.any`** — the file that controls it all.
+
+**Next:** [Part 2: The `dispatcher.any` File: Understanding the Core of AEM Dispatcher Configuration](/blog/aem-dispatcher/dev-guide-part2)

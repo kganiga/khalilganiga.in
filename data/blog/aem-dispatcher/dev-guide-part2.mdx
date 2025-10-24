@@ -1,0 +1,238 @@
+---
+title: AEM Dispatcher Series 2 - Understanding the `dispatcher.any` File
+date: '2025-10-24'
+tags: ['Dispatcher','Tutorial','AEM',How To','Security','Caching','Performance']
+draft: false
+summary: A detailed walkthrough of the dispatcher.any configuration — explaining its key sections like /cache, /filter, /renders, and /farm. Learn how to read, structure, and maintain it properly.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+If you’ve read [Part 1](/blog/aem-dispatcher/dev-guide-part1) of this series, you already know that the AEM Dispatcher acts as both a smart bouncer (security) and a photocopier (caching) for your website.
+
+In this post, we’ll open the Dispatcher’s core — the `dispatcher.any` file — and explore what it does, how it’s structured, and why developers should get comfortable reading and sometimes editing it.
+
+## What Is the `dispatcher.any` File?
+
+The `dispatcher.any` file is the main configuration file for the AEM Dispatcher module. It tells Dispatcher how to behave — which sites to serve, what to cache, what to block, and where to forward requests.
+
+If Dispatcher is an appliance, `dispatcher.any` would be its instruction manual.
+
+Typical locations of the file:
+```
+/etc/httpd/conf.dispatcher.d/dispatcher.any
+```
+
+or
+
+```
+/usr/lib/apache2/modules/dispatcher.any
+```
+
+depending on your environment.
+
+## Why Developers Should Understand `dispatcher.any`
+
+Even if DevOps or AMS engineers usually maintain it, developers benefit from understanding this file because it directly affects:
+
+-   Which URLs are allowed or blocked, impacting your servlets and APIs    
+-   What gets cached, influencing component rendering and performance    
+-   Where requests are forwarded, affecting load balancing and failover
+    
+
+If you’ve ever wondered “Why is my component not updating?” or “Why is my servlet blocked?”, `dispatcher.any` is often the answer.
+
+## High-Level Structure of `dispatcher.any`
+
+The file is organized into several sections, each serving a specific purpose. A simplified structure:
+
+```
+/farms {
+  /websiteFarm {
+    /clientheaders { ... }
+    /virtualhosts { ... }
+    /renders { ... }
+    /filter { ... }
+    /cache { ... }
+  }
+}
+
+```
+
+Let’s break these sections down.
+
+## 1. /farms — The Starting Point
+
+The /farms section defines one or more sites (farms) managed by Dispatcher.
+
+A farm is essentially a configuration bundle for a single site or environment.
+
+Single-site example:
+
+```
+/farms {
+  /mysite {
+    /clientheaders { ... }
+    /virtualhosts { ... }
+    /renders { ... }
+    /filter { ... }
+    /cache { ... }
+  }
+}
+```
+
+Multi-site example:
+
+```
+/farms {
+  /site1 {
+    /virtualhosts { "*.site1.com" }
+    /renders { ... }
+    /filter { ... }
+    /cache { ... }
+  }
+
+  /site2 {
+    /virtualhosts { "*.site2.com" }
+    /renders { ... }
+    /filter { ... }
+    /cache { ... }
+  }
+}
+```
+
+Dispatcher checks the Host header of incoming requests and routes them to the matching farm.
+
+Each farm represents one site or environment, with its own behavior and caching rules.
+
+## 2. /clientheaders — Forwarding HTTP Headers
+
+This section specifies which client headers are passed to AEM. Dispatcher strips unnecessary headers by default for security and performance.
+
+Typical headers to forward:
+
+```
+/clientheaders {
+  "Host"
+  "User-Agent"
+  "Accept"
+  "Referer"
+  "Authorization"
+  "X-Forwarded-For"
+}
+```
+
+If your app uses a custom header, it must be whitelisted here.
+
+## 3. /virtualhosts — Domain Mapping
+
+`/virtualhosts` defines which hostnames or patterns a farm should respond to:
+
+```
+/virtualhosts {
+  "www.mysite.com"
+  "mysite.com"
+  "*.mysite.com"
+}
+```
+
+In a multisite setup, each farm’s `/virtualhosts` ensures the correct configuration is applied for each domain.
+
+## 4. /renders — Backend Publish Instances
+
+This section tells Dispatcher where to forward uncached requests, usually to your AEM Publish instances:
+
+```
+/renders {
+  /publish1 {
+    /hostname "aem-publish1"
+    /port "4503"
+  }
+  /publish2 {
+    /hostname "aem-publish2"
+    /port "4503"
+  }
+}
+```
+
+> Dispatcher can distribute traffic among multiple instances, acting as
+> a load balancer.
+
+## 5. /filter — Security Gate
+
+`/filter` controls which requests are allowed or denied before reaching AEM Publish, essentially acting as a firewall:
+
+```
+/filter {
+  /0001 { /type "deny" /url "/crx/*" }
+  /0002 { /type "allow" /url "/content/*" }
+  /0003 { /type "allow" /url "/etc.clientlibs/*" }
+  /0004 { /type "allow" /url "/dispatcher/invalidate.cache" }
+}
+
+```
+
+[Part 3](/blog/aem-dispatcher/dev-guide-part3) will dive deeper into writing secure `/filter` rules.
+
+## 6. /cache — Dispatcher Caching Rules
+
+This section defines what to cache, where to store it, and how to invalidate it:
+
+```
+/cache {
+  /docroot "/opt/dispatcher/cache"
+  /rules {
+    /0000 { /glob "*.html" /type "allow" }
+    /0001 { /glob "*.user.json" /type "deny" }
+  }
+  /statfileslevel "2"
+  /invalidate {
+    /0000 { /glob "*" /type "allow" }
+  }
+}
+
+```
+
+Key elements:
+
+-   /docroot – location for cached files    
+-   /rules – which files to cache or skip    
+-   /statfileslevel – cache invalidation mechanism    
+-   /invalidate – triggers for cache updates(recommended reading : [Invalidating and Flushing the Cache](https://experienceleague.adobe.com/en/docs/experience-manager-learn/dispatcher-tutorial/chapter-1#invalidating-and-flushing-the-cache)
+    
+
+[Part 4](/blog/aem-dispatcher/dev-guide-part4) will cover caching behavior in detail.
+
+## Visual Summary of `dispatcher.any` Structure
+
+```
+dispatcher.any
+│
+└── /farms
+    ├── /site1
+    │   ├── /clientheaders
+    │   ├── /virtualhosts
+    │   ├── /renders
+    │   ├── /filter
+    │   └── /cache
+    │
+    └── /site2
+        ├── /clientheaders
+        ├── /virtualhosts
+        ├── /renders
+        ├── /filter
+        └── /cache
+
+```
+
+Each farm behaves independently for its corresponding domain.
+
+## Key Takeaways
+
+-   `dispatcher.any` defines how AEM interacts with the outside world.
+    
+-   Dispatcher can manage multiple farms, each for a separate site or environment.
+    
+-   Understanding it helps developers debug caching, access, and performance issues.
+
+Next: [Part 3 — Securing Your AEM Site: A Developer’s Deep Dive into Dispatcher `/filter` Rules](/blog/aem-dispatcher/dev-guide-part3)

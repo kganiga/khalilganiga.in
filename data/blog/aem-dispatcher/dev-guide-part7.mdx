@@ -1,0 +1,210 @@
+---
+title: AEM Dispatcher Series 7 - Dispatcher Troubleshooting
+date: '2025-10-24'
+tags: ['Dispatcher','Tutorial','AEM', 'How To','Security','Caching','Performance']
+draft: false
+summary: A practical guide to fixing common Dispatcher problems — stale pages, 403/404 errors, and caching issues. Learn how to read logs, test configurations, and debug step by step.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+This guide walks through a practical debugging approach for developers. We’ll explore how to read logs, recognize common problems, and fix them step by step — from cache invalidation to filter rule misfires.
+
+## 1. Setting Up Dispatcher Logging
+
+Before you can debug, make sure Dispatcher is actually logging enough information.
+
+Set the log level in your Apache configuration:
+
+```apache
+DispatcherLogLevel 3
+```
+
+Log level meanings:
+
+-   `0` – Emergencies only
+    
+-   `1` – Critical errors
+    
+-   `2` – Warnings
+    
+-   `3` – Debug (recommended for development and troubleshooting)
+    
+
+Typical log file location:`/var/log/apache2/dispatcher.log`
+
+Restart Apache after updating the configuration to apply changes and start collecting Dispatcher activity.
+
+## 2. Reading `dispatcher.log`
+
+Dispatcher logs are your first and most valuable debugging tool. Typical entries look like this:
+
+```
+Filtering URI '/bin/my-servlet' - denied
+Cache MISS: /content/mysite/en/home.html
+Cache HIT: /content/mysite/en/home.html
+Invalidating: /content/mysite/en/about.html
+```
+
+Pay attention to these patterns:
+
+-   **Filtering or security issues** —  
+    If you see `Filtering URI ... - denied`, the request is blocked by `/filter` rules.
+    
+-   **Caching behavior** —  
+    `Cache HIT` means the page was served from cache.  
+    `Cache MISS` means the page was fetched from Publish and may now be cached.
+    
+-   **Invalidation events** —  
+    `Invalidating:` confirms that the flush agent triggered and Dispatcher marked related cached content as outdated.
+
+## 3. Common Problems and Solutions
+
+### Problem 1: “My content isn’t updating after activation”
+
+**Possible causes:**
+
+-   The `.stat` file isn’t updated (flush agent misconfiguration).
+    
+-   Cache directory permissions block updates.
+    
+-   Incorrect `/statfileslevel` setting.
+    
+
+**Debugging steps:**
+
+1.  Check the `.stat` file timestamp:    
+    ```bash
+    ls -l /opt/dispatcher/cache/content/mysite/en/.stat    
+    ```
+    
+2.  Confirm the flush agent IP is listed under `/allowedClients`.    
+3.  Verify `/statfileslevel` matches your folder depth.
+
+### Problem 2: “I’m getting a 403 Forbidden”
+
+**Possible causes:**
+
+-   The `/filter` section denies the requested path.    
+-   Missing allow rules for `/bin` or custom servlets.    
+
+**Debugging steps:**
+
+1.  Review the `/filter` configuration in `dispatcher.any`.    
+2.  Add explicit allow rules if needed:
+    
+
+```apache
+/filter {
+  /0005 { /type "allow" /url "/bin/my-servlet" }
+  /0006 { /type "allow" /url "*.model.json" }
+}
+```
+
+3.  Check `dispatcher.log` for denied URIs to confirm which path is blocked.
+    
+### Problem 3: “I’m getting a 404 Not Found”
+
+**Possible causes:**
+
+-   The resource doesn’t exist on the Publish instance.    
+-   Dispatcher `/filter` is blocking it.    
+-   Apache rewrite rules (vanity URLs) are incorrect.    
+
+**Debugging steps:**
+
+1.  Confirm the page exists on Publish:
+    
+    ```bash
+    curl -I http://publish1.mysite.com/content/mysite/en/page.html    
+    ```
+    
+2.  Review `/filter` rules in `dispatcher.any`.    
+3.  Check Apache rewrite configuration for vanity mappings.
+
+### Problem 4: “My component is cached when it shouldn’t be”
+
+**Possible causes:**
+
+-   `/cache/rules` are too permissive.    
+-   Query parameters or personalization not handled correctly.    
+
+**Debugging steps:**
+
+1.  Review the `/cache/rules` section:
+    
+
+```apache
+/rules {
+  /0000 { /glob "*.html" /type "allow" }
+  /0001 { /glob "*.user.json" /type "deny" }
+}
+```
+
+2.  Inspect `/ignoreUrlParams` — query parameters might affect caching keys.    
+3.  Test by manually clearing cache or updating `.stat` files.
+
+## 4. Developer Debug Checklist
+
+```markdown
+| Step | What to Check                                                |
+| ---- | ------------------------------------------------------------ |
+| 1    | `dispatcher.log` for errors, denied URLs, and cache behavior |
+| 2    | Cache directory permissions and `.stat` timestamps           |
+| 3    | `/filter` rules for blocked paths                            |
+| 4    | `/cache` rules for stale or wrongly cached content           |
+| 5    | Flush agent configuration and `/allowedClients` IPs          |
+| 6    | `/renders` connectivity with Publish instances               |
+| 7    | Apache rewrite rules for vanity URLs                         |
+| 8    | Session management for logged-in areas                       |
+
+```
+## 5. Quick Debug Commands
+
+-   **Check if a cached file exists:**
+    
+    ```bash
+    ls -l /opt/dispatcher/cache/content/mysite/en/home.html    
+    ```
+    
+-   **Check `.stat` timestamp:**
+    
+    ```bash
+    ls -l /opt/dispatcher/cache/content/mysite/en/.stat    
+    ```
+    
+-   **Force manual invalidation (testing only):**
+    
+    ```bash
+    touch /opt/dispatcher/cache/content/mysite/en/.stat    
+    ```
+    
+-   **Test path filtering:**
+    
+    ```bash
+    curl -I http://dispatcher.mysite.com/bin/my-servlet    
+    ```
+    
+-   **Check cache HIT/MISS using headers or logs:**
+    
+    ```bash
+    curl -I http://dispatcher.mysite.com/content/mysite/en/home.html    
+    ```
+    
+    Look for `X-Cache-Status` or similar headers if configured.
+    
+## 6. Developer Best Practices
+
+-   Always test changes in **lower environments** before production.
+    
+-   Use **debug logging** temporarily — prolonged use can impact performance.
+    
+-   Check **file permissions** on cache and `.stat` directories.
+    
+-   Document any custom `/filter` or `/cache` rules to keep DevOps aligned.
+    
+-   Collaborate with DevOps or AMS — Dispatcher issues often overlap with infrastructure settings.
+
+Next: [Top 15 AEM Dispatcher Interview Questions](/blog/aem-dispatcher/top-15-interview-questions)
+
