@@ -1,13 +1,14 @@
 ---
 title: AEM Dispatcher Series 3 - Securing Your AEM Site - Deep Dive into Dispatcher `/filter` Rules
 date: '2025-10-24'
-tags: ['Dispatcher','Tutorial','AEM','How To','Security','Caching','Performance']
+tags: ['Dispatcher', 'Tutorial', 'AEM', 'How To', 'Security', 'Caching', 'Performance']
 draft: false
 summary: A detailed walkthrough of the Dispatcher `/filter` Rules
 images: []
 layout: PostLayout
 isfeatured: false
 ---
+
 If you’ve been following along, you now understand the role of the AEM Dispatcher and how its `dispatcher.any` file is structured.
 
 In this post, we’ll focus on one of the most critical parts of that file — the `/filter` section.
@@ -18,28 +19,27 @@ This is the Dispatcher’s security gate — the rulebook that decides which req
 
 If you’re an AEM developer, you’ve probably heard something like:
 
--   “I can’t access my servlet.”    
--   “I’m getting a 403 Forbidden.”    
--   “Why can’t I hit `/system/console` on Publish?”
-    
+- “I can’t access my servlet.”
+- “I’m getting a 403 Forbidden.”
+- “Why can’t I hit `/system/console` on Publish?”
 
 Nine times out of ten, the answer lies in the Dispatcher’s `/filter` section.
 
 Even though DevOps or AMS teams often maintain these files, understanding filters is vital for developers because:
 
--   You’ll need to safely expose custom endpoints like `/bin/my-servlet`.    
--   You’ll debug 403 Forbidden errors during testing.    
--   You’ll collaborate better with ops teams by explaining what your code needs access to.
+- You’ll need to safely expose custom endpoints like `/bin/my-servlet`.
+- You’ll debug 403 Forbidden errors during testing.
+- You’ll collaborate better with ops teams by explaining what your code needs access to.
+
 ## Understanding How `/filter` Works
 
 Dispatcher filters act as allowlists or denylists for incoming HTTP requests. They determine what URLs are allowed to pass through to AEM Publish or Author.
 
 At a high level:
 
--   Each rule has a `/type` — either "allow" or "deny".    
--   Each rule has a `/url` (and optionally `/method`) pattern that it applies to.    
--   Dispatcher evaluates rules in order, from top to bottom.
-    
+- Each rule has a `/type` — either "allow" or "deny".
+- Each rule has a `/url` (and optionally `/method`) pattern that it applies to.
+- Dispatcher evaluates rules in order, from top to bottom.
 
 If a request matches a rule, that rule decides whether to allow or deny it. Once a match is found, Dispatcher stops evaluating further rules.
 
@@ -66,9 +66,9 @@ This default-deny model is intentional. You explicitly allow only what is safe.
 
 How it works:
 
-1.  Requests to `/crx/*` or `/system/console/*` are denied.    
-2.  Regular website content under `/content/` is allowed.    
-3.  Client libraries and DAM assets are allowed.    
+1.  Requests to `/crx/*` or `/system/console/*` are denied.
+2.  Regular website content under `/content/` is allowed.
+3.  Client libraries and DAM assets are allowed.
 4.  Special endpoints for cache invalidation or login are allowed.
 
 ## Real-World Example: Allowing a Custom Servlet
@@ -142,37 +142,35 @@ If you add a new rule, ensure it does not override or conflict with existing one
 
 For example:
 
--   If `/0002` denies `/content/*` but `/0003` allows `/content/mysite/*`, `/0002` blocks everything before `/0003` can allow it.
-    
+- If `/0002` denies `/content/*` but `/0003` allows `/content/mysite/*`, `/0002` blocks everything before `/0003` can allow it.
 
 Always order rules carefully, placing specific allows before broader denies when needed.
 
 ## Debug Tip: Logging and Testing Filters
 
 1.  Enable Dispatcher debug logging in Apache configuration:
-    
 
 ```
 DispatcherLogLevel 3
 ```
 
-2.  Check dispatcher.log for entries:   
+2.  Check dispatcher.log for entries:
+
 ```
 Filtering URI '/bin/my-servlet' - denied
 Filtering URI '/content/mysite/en.html' - allowed
 ```
 
 3.  Test your updated `/filter` rules in a lower environment before production.
-    
 
-----------
+---
 
 ## Key Takeaways for Developers
 
--   The `/filter` section is your security gate.    
--   Dispatcher uses a default-deny model — only explicitly allowed paths are permitted.    
--   Always write specific rules, never broad wildcards like `/` or `/*.json`.    
--   Order matters — rules are evaluated top to bottom.    
--   Understanding filters helps you quickly fix 403 and access issues.
-    
+- The `/filter` section is your security gate.
+- Dispatcher uses a default-deny model — only explicitly allowed paths are permitted.
+- Always write specific rules, never broad wildcards like `/` or `/*.json`.
+- Order matters — rules are evaluated top to bottom.
+- Understanding filters helps you quickly fix 403 and access issues.
+
 Next: [Part 4 — A Developer’s Guide to Dispatcher `/cache` Rules](/blog/aem-dispatcher/dev-guide-part4)

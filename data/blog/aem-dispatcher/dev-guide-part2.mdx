@@ -1,13 +1,14 @@
 ---
 title: AEM Dispatcher Series 2 - Understanding the `dispatcher.any` File
 date: '2025-10-24'
-tags: ['Dispatcher','Tutorial','AEM','How To','Security','Caching','Performance']
+tags: ['Dispatcher', 'Tutorial', 'AEM', 'How To', 'Security', 'Caching', 'Performance']
 draft: false
 summary: A detailed walkthrough of the dispatcher.any configuration — explaining its key sections like /cache, /filter, /renders, and /farm. Learn how to read, structure, and maintain it properly.
 images: []
 layout: PostLayout
 isfeatured: false
 ---
+
 If you’ve read [Part 1](/blog/aem-dispatcher/dev-guide-part1) of this series, you already know that the AEM Dispatcher acts as both a smart bouncer (security) and a photocopier (caching) for your website.
 
 In this post, we’ll open the Dispatcher’s core — the `dispatcher.any` file — and explore what it does, how it’s structured, and why developers should get comfortable reading and sometimes editing it.
@@ -19,6 +20,7 @@ The `dispatcher.any` file is the main configuration file for the AEM Dispatcher 
 If Dispatcher is an appliance, `dispatcher.any` would be its instruction manual.
 
 Typical locations of the file:
+
 ```
 /etc/httpd/conf.dispatcher.d/dispatcher.any
 ```
@@ -35,10 +37,9 @@ depending on your environment.
 
 Even if DevOps or AMS engineers usually maintain it, developers benefit from understanding this file because it directly affects:
 
--   Which URLs are allowed or blocked, impacting your servlets and APIs    
--   What gets cached, influencing component rendering and performance    
--   Where requests are forwarded, affecting load balancing and failover
-    
+- Which URLs are allowed or blocked, impacting your servlets and APIs
+- What gets cached, influencing component rendering and performance
+- Where requests are forwarded, affecting load balancing and failover
 
 If you’ve ever wondered “Why is my component not updating?” or “Why is my servlet blocked?”, `dispatcher.any` is often the answer.
 
@@ -195,11 +196,10 @@ This section defines what to cache, where to store it, and how to invalidate it:
 
 Key elements:
 
--   /docroot – location for cached files    
--   /rules – which files to cache or skip    
--   /statfileslevel – cache invalidation mechanism    
--   /invalidate – triggers for cache updates(recommended reading : [Invalidating and Flushing the Cache](https://experienceleague.adobe.com/en/docs/experience-manager-learn/dispatcher-tutorial/chapter-1#invalidating-and-flushing-the-cache)
-    
+- /docroot – location for cached files
+- /rules – which files to cache or skip
+- /statfileslevel – cache invalidation mechanism
+- /invalidate – triggers for cache updates(recommended reading : [Invalidating and Flushing the Cache](https://experienceleague.adobe.com/en/docs/experience-manager-learn/dispatcher-tutorial/chapter-1#invalidating-and-flushing-the-cache)
 
 [Part 4](/blog/aem-dispatcher/dev-guide-part4) will cover caching behavior in detail.
 
@@ -229,10 +229,8 @@ Each farm behaves independently for its corresponding domain.
 
 ## Key Takeaways
 
--   `dispatcher.any` defines how AEM interacts with the outside world.
-    
--   Dispatcher can manage multiple farms, each for a separate site or environment.
-    
--   Understanding it helps developers debug caching, access, and performance issues.
+- `dispatcher.any` defines how AEM interacts with the outside world.
+- Dispatcher can manage multiple farms, each for a separate site or environment.
+- Understanding it helps developers debug caching, access, and performance issues.
 
 Next: [Part 3 — Securing Your AEM Site: A Developer’s Deep Dive into Dispatcher `/filter` Rules](/blog/aem-dispatcher/dev-guide-part3)

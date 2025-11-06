@@ -1,7 +1,7 @@
 ---
 title: AEM Dispatcher Series 1 - A Developer’s Guide to What It Is and Why You Should Care
 date: '2025-10-24'
-tags: ['Dispatcher','Tutorial','AEM','How To','Security','Caching','Performance']
+tags: ['Dispatcher', 'Tutorial', 'AEM', 'How To', 'Security', 'Caching', 'Performance']
 draft: false
 summary: Learn about the AEM Dispatcher in perspective of developer, why it exists, and how it works as both a caching and security layer.
 images: []
@@ -21,9 +21,9 @@ Many AEM issues that feel like “code bugs” — components not updating, page
 
 Understanding how it works helps you:
 
--  Design components that behave correctly when cached
--   Debug faster    
--   Communicate more effectively with Ops teams
+- Design components that behave correctly when cached
+- Debug faster
+- Communicate more effectively with Ops teams
 
 In short: treat the Dispatcher as part of your application.
 
@@ -31,9 +31,8 @@ In short: treat the Dispatcher as part of your application.
 
 The AEM Dispatcher is a module for Apache HTTPD (or IIS), adding AEM-specific capabilities while working alongside other Apache modules like SSL or SSI. Think of it as:
 
--   A photocopier that hands out ready-made copies of pages (**caching**)    
--   A smart bouncer that decides who gets access (**reverse proxy / security filtering**)
-    
+- A photocopier that hands out ready-made copies of pages (**caching**)
+- A smart bouncer that decides who gets access (**reverse proxy / security filtering**)
 
 It makes your AEM site **faster**, **safer**, and **more scalable**.
 
@@ -44,14 +43,10 @@ It makes your AEM site **faster**, **safer**, and **more scalable**.
 
 ```
 
--   **Author:** Where content creators publish pages
-    
--   **Publish:** The live instance serving content
-    
--   **Dispatcher:** A web-server module that caches responses and filters requests
-    
--   **End User:** The visitor viewing your site
-    
+- **Author:** Where content creators publish pages
+- **Publish:** The live instance serving content
+- **Dispatcher:** A web-server module that caches responses and filters requests
+- **End User:** The visitor viewing your site
 
 Every request from a user passes through the Dispatcher before reaching AEM Publish. It’s both **gatekeeper** and **accelerator**.
 
@@ -67,11 +62,10 @@ Imagine a cafe: every morning, customers order the same coffee. Instead of makin
 **How it works:**
 
 1.  User requests `/content/mysite/en/home.html`
-    
 2.  Dispatcher checks if a cached copy exists
-    
-    -   Yes → serve it from disk (fast)        
-    -   No →forward to AEM Publish, store the response for next time        
+
+    - Yes → serve it from disk (fast)
+    - No →forward to AEM Publish, store the response for next time
 
 **Example cache directory:**
 
@@ -92,11 +86,10 @@ Before a request reaches Publish, Dispatcher checks **filter rules** in `dispatc
 
 It blocks access to sensitive paths like:
 
--   `/system/console`    
--   `/crx/de`    
--   `/bin/querybuilder.json`    
--   `/etc/packages/*.zip`
-    
+- `/system/console`
+- `/crx/de`
+- `/bin/querybuilder.json`
+- `/etc/packages/*.zip`
 
 **Example filter rules:**
 
@@ -116,24 +109,19 @@ Dispatcher configuration directly affects code behavior in production. Common is
 
 **Scenario 1: Component Isn’t Updating**
 
--   You deploy a new version, but the site still shows old content.    
--   **Cause:** stale cached files. Cache flush or updating the `.stat` file fixes it.
-    
+- You deploy a new version, but the site still shows old content.
+- **Cause:** stale cached files. Cache flush or updating the `.stat` file fixes it.
 
 **Scenario 2: Page Is Too Slow**
 
--   Some pages crawl while others are fast.    
--   **Cause:** missing cache rules or uncached query parameters. Once cached, pages load instantly.
-    
+- Some pages crawl while others are fast.
+- **Cause:** missing cache rules or uncached query parameters. Once cached, pages load instantly.
 
 **Scenario 3: Getting a 403 Forbidden**
 
--   Your servlet `/bin/my-servlet` doesn’t work.
-    
--   **Cause:** path not whitelisted in filters.
-    
--   Fix:
-    
+- Your servlet `/bin/my-servlet` doesn’t work.
+- **Cause:** path not whitelisted in filters.
+- Fix:
 
 ```apache
 /0040 { /type "allow" /url "/bin/my-servlet" }
@@ -159,7 +147,6 @@ User Request
 [AEM Publish Instance]
 
 ```
-
 
 The Dispatcher is both **gatekeeper** and **cache manager**, deciding who gets in and how fast they’re served.
 

@@ -1,19 +1,19 @@
 ---
 title: AEM Dispatcher Series 4 - A Developer’s Guide to Dispatcher `/cache` Rules
 date: '2025-10-24'
-tags: ['Dispatcher','Tutorial','AEM','How To','Security','Caching','Performance']
+tags: ['Dispatcher', 'Tutorial', 'AEM', 'How To', 'Security', 'Caching', 'Performance']
 draft: false
 summary: A detailed walkthrough of the Dispatcher `/cache` Rules
 images: []
 layout: PostLayout
 isfeatured: false
 ---
+
 If you’re an AEM developer reading this, chances are you’ve heard things like:
 
--   “My page isn’t updating after I publish!”    
--   “Why do I still see the old banner?”    
--   “Dispatcher cache didn’t clear!”
-    
+- “My page isn’t updating after I publish!”
+- “Why do I still see the old banner?”
+- “Dispatcher cache didn’t clear!”
 
 Welcome to the world of AEM Dispatcher caching.
 
@@ -25,10 +25,10 @@ Even though cache configuration is often managed by DevOps or AMS teams, caching
 
 Reasons developers should understand it:
 
--   If content isn’t updating, it’s likely stuck in cache.    
--   Components that output personalized data should not be cached.    
--   Slow page loads may indicate caching is misconfigured.
-    
+- If content isn’t updating, it’s likely stuck in cache.
+- Components that output personalized data should not be cached.
+- Slow page loads may indicate caching is misconfigured.
+
 Understanding the `/cache` section helps debug issues, communicate with operations teams, and catch misconfigurations early.
 
 ## The Dispatcher Cache: Think it of Like a “Photocopier”
@@ -37,10 +37,10 @@ Dispatcher is like a xerox machine for your website.
 
 When a user requests a page for the first time:
 
--   Dispatcher forwards the request to AEM Publish.    
--   AEM generates the page.    
--   Dispatcher stores a static copy of that response in its cache.    
--   Subsequent requests are served from cache instantly.  
+- Dispatcher forwards the request to AEM Publish.
+- AEM generates the page.
+- Dispatcher stores a static copy of that response in its cache.
+- Subsequent requests are served from cache instantly.
 
 This saves the Publish server from regenerating content repeatedly.
 
@@ -93,6 +93,7 @@ This is where you can check or manually clear cached files.
 This section defines which requests and responses are cached.
 
 Example:
+
 ```
 /rules {
   /0000 { /glob "*.html" /type "allow" }
@@ -110,21 +111,22 @@ This ensures HTML and static assets are cached, while JSON responses (e.g., user
 
 ### Cacheable Requests
 
--   Request is configured to be cacheable in Dispatcher configuration.    
--   Request is a plain GET request.    
+- Request is configured to be cacheable in Dispatcher configuration.
+- Request is a plain GET request.
 
 ### Non-Cacheable Requests or Responses
 
--   Request denied caching by path, pattern, or MIME type.    
--   Response returns a `Dispatcher: no-cache` header.    
--   Response returns a `Cache-Control: no-cache` or `Cache-Control: private` header.    
--   Response returns a `Pragma: no-cache` header.    
--   Request contains query parameters.    
--   URL without extension.    
--   URL with a suffix that does not have an extension.    
--   Response returns a status code other than 200.    
--   POST requests.
-- 
+- Request denied caching by path, pattern, or MIME type.
+- Response returns a `Dispatcher: no-cache` header.
+- Response returns a `Cache-Control: no-cache` or `Cache-Control: private` header.
+- Response returns a `Pragma: no-cache` header.
+- Request contains query parameters.
+- URL without extension.
+- URL with a suffix that does not have an extension.
+- Response returns a status code other than 200.
+- POST requests.
+-
+
 ### Real-World Example: Prevent Caching User-Specific JSON
 
 For a personalized header component:
@@ -143,6 +145,7 @@ You’d deny caching:
 ```
 
 This ensures session-specific data is always fetched fresh from AEM.
+
 ## 3. `/statfileslevel` — The Cache Invalidation Depth
 
 `/statfileslevel` defines how deep cache invalidation goes when content is activated:
@@ -180,6 +183,7 @@ This flushes all content. You can restrict it:
   /0001 { /glob "*.json" /type "deny" }
 }
 ```
+
 ## 5. `/allowedClients` — Who Can Trigger Cache Invalidation
 
 Defines which IPs can send cache flush requests:
@@ -212,16 +216,15 @@ Dispatcher ignores common tracking parameters so `/home.html?utm_source=google` 
 
 ## Developer Tip: Manually Testing Caching Behavior
 
-1.  Check if a file exists in `/docroot`. If yes, it’s cached; otherwise, Dispatcher fetches it from Publish.    
-2.  Inspect response headers:  `
-X-Cache-Status: HIT or MISS
-`
--   HIT: content served from cache.    
--   MISS: content fetched from Publish.    
+1.  Check if a file exists in `/docroot`. If yes, it’s cached; otherwise, Dispatcher fetches it from Publish.
+2.  Inspect response headers: `X-Cache-Status: HIT or MISS`
 
-3.  Touch the `.stat` file to invalidate cache for testing:   `touch /opt/dispatcher/cache/content/mysite/.stat`
+- HIT: content served from cache.
+- MISS: content fetched from Publish.
 
-----------
+3.  Touch the `.stat` file to invalidate cache for testing: `touch /opt/dispatcher/cache/content/mysite/.stat`
+
+---
 
 ## Example: Production-Ready `/cache` Block
 
@@ -256,20 +259,18 @@ X-Cache-Status: HIT or MISS
 
 This setup:
 
--   Caches HTML and static assets.    
--   Skips caching JSON and personalized data.    
--   Restricts flush access to trusted IPs.    
--   Ignores tracking parameters.    
--   Uses `.stat` files two levels deep for cache invalidation.
+- Caches HTML and static assets.
+- Skips caching JSON and personalized data.
+- Restricts flush access to trusted IPs.
+- Ignores tracking parameters.
+- Uses `.stat` files two levels deep for cache invalidation.
 
 Now that you understand caching, the next question is how AEM knows when to invalidate it.
 
 The next part will explain:
 
--   What `.stat` files are and how they work.
-    
--   How the Dispatcher Flush Agent triggers invalidation.
-    
--   How to optimize cache flushing using `/statfileslevel`.
-    
+- What `.stat` files are and how they work.
+- How the Dispatcher Flush Agent triggers invalidation.
+- How to optimize cache flushing using `/statfileslevel`.
+
 Next: [Part 5 — Why Isn’t My Page Updating? The AEM Dispatcher `.stat` File Explained](/blog/aem-dispatcher/dev-guide-part5)

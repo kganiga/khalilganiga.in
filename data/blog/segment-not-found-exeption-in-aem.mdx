@@ -1,12 +1,13 @@
 ---
 title: SegmentNotFoundException in AEM - How to Fix It Safely
 date: '2025-11-06'
-tags: ['AEM','Offline Compaction','Tech Info','Exception']
+tags: ['AEM', 'Offline Compaction', 'Tech Info', 'Exception']
 draft: false
 summary: Learn what causes SegmentNotFoundException, why it happens, and how to fix and prevent repository corruption in TarMK
-images: []
+images: ['https://i.ibb.co/qYRnP9fC/segment-Notfoundexception-khalil-ganiga.png']
 layout: PostLayout
 ---
+
 One afternoon, a colleague pinged me in a bit of panic.
 
 > We’re seeing SegmentNotFoundException in AEM. The entire team is blocked.
@@ -20,30 +21,31 @@ That’s when they followed my original suggestion. They stopped AEM completely,
 That one event perfectly illustrates why this exception is so often misunderstood. It looks like a random repository failure, but the cause is almost always deeper, predictable, and preventable.
 
 Here’s the exact error they saw in the logs:
+
 ```
 org.apache.jackrabbit.oak.segment.SegmentNotFoundException: Segment <UUID> not found
 ```
 
 If you’ve ever seen this line, you know the feeling, it’s not a minor warning. It’s AEM’s way of telling you that something is missing in the repository.
 
-AEM stores content using Jackrabbit Oak, and when you’re using **TarMK** (the default persistence mechanism for most on-prem instances), everything in the repository is stored as small binary chunks called *segments.* These segments are stored inside `.tar` files located under:`
+AEM stores content using Jackrabbit Oak, and when you’re using **TarMK** (the default persistence mechanism for most on-prem instances), everything in the repository is stored as small binary chunks called _segments._ These segments are stored inside `.tar` files located under:`
 /crx-quickstart/repository/segmentstore`
 
 You can think of segments as the building blocks of your JCR repository — thousands of small pieces on the filesystem that together form the entire content tree. When one or more of those segments go missing, get truncated, or become unreadable, Oak can’t reconstruct the node tree correctly. That’s when you get a `SegmentNotFoundException`.
 
 In other words, those “segments” are small binary blocks on disk that AEM depends on. If any of them are lost or corrupted, Oak won’t be able to read certain parts of the repository, and depending on what’s missing, it might fail completely or continue with missing data.
 
-This exception doesn’t *always* crash AEM.
+This exception doesn’t _always_ crash AEM.
 
 It depends on what part of the repository the missing segment belongs to.
 
-* If the lost segment contains **core repository data** like checkpoints, revisions, or the root node, AEM won’t start at all. Oak fails to initialize the repository during startup, and you’ll see the exception right as AEM tries to bring up the repository.
+- If the lost segment contains **core repository data** like checkpoints, revisions, or the root node, AEM won’t start at all. Oak fails to initialize the repository during startup, and you’ll see the exception right as AEM tries to bring up the repository.
 
-* If the missing segment belongs to **non-critical content**, like an old version of a page, a DAM binary, or some historical revision, AEM might still start. You’ll just see the exception show up in the logs whenever that broken piece of data is accessed — for example, when viewing a page version history, running a query, or retrieving an asset.
+- If the missing segment belongs to **non-critical content**, like an old version of a page, a DAM binary, or some historical revision, AEM might still start. You’ll just see the exception show up in the logs whenever that broken piece of data is accessed — for example, when viewing a page version history, running a query, or retrieving an asset.
 
 Either way, the repository is already corrupted. The difference is just whether the corruption touches startup-critical data or not.
 
-One common misconception is that this only happens after a restart. That’s not true, it can happen anytime. But restarts tend to *reveal* the problem. Here’s why.
+One common misconception is that this only happens after a restart. That’s not true, it can happen anytime. But restarts tend to _reveal_ the problem. Here’s why.
 
 During normal operation, Oak keeps a lot of repository state cached in memory. If a segment disappears on disk while AEM is running, Oak might not notice right away because it’s not trying to read it. But when AEM restarts, Oak has to rebuild the entire view of the repository from disk. That’s when it discovers missing or invalid segments. So while the restart doesn’t cause the corruption, it’s often the first time the system realizes it exists.
 
@@ -51,15 +53,15 @@ During normal operation, Oak keeps a lot of repository state cached in memory. I
 
 The root causes of `SegmentNotFoundException` almost always fall into one of these categories:
 
-* **Unclean shutdowns** – Someone killed the process, the JVM crashed, or the machine powered off before Oak could flush data to disk.
-* **Interrupted compaction or GC** – TarMK’s maintenance process rewrites active data into new `.tar` files and removes old ones. If this process is interrupted (say, during a power failure or forced restart), the segment index can become inconsistent.
-* **Running online compaction under load** – When users or workflows are actively modifying content while compaction is running, some segments might be marked as “unreferenced” and deleted even though they’re still needed.
-* **Filesystem-level backups during runtime** – Copying the repository folder while AEM is running often produces a partial or mismatched snapshot.
-* **Manual file deletion or incomplete sync** – Sometimes well-meaning admins try to clear disk space by removing `.tar` files. That almost always leads to this exact exception.
-* **Disk or storage corruption** – Slow or failing disks, bad sectors, or unstable mounts can silently corrupt segment data.
+- **Unclean shutdowns** – Someone killed the process, the JVM crashed, or the machine powered off before Oak could flush data to disk.
+- **Interrupted compaction or GC** – TarMK’s maintenance process rewrites active data into new `.tar` files and removes old ones. If this process is interrupted (say, during a power failure or forced restart), the segment index can become inconsistent.
+- **Running online compaction under load** – When users or workflows are actively modifying content while compaction is running, some segments might be marked as “unreferenced” and deleted even though they’re still needed.
+- **Filesystem-level backups during runtime** – Copying the repository folder while AEM is running often produces a partial or mismatched snapshot.
+- **Manual file deletion or incomplete sync** – Sometimes well-meaning admins try to clear disk space by removing `.tar` files. That almost always leads to this exact exception.
+- **Disk or storage corruption** – Slow or failing disks, bad sectors, or unstable mounts can silently corrupt segment data.
 
-Offline compaction is simple but powerful. It rewrites the repository into a clean, consistent state and can often *heal* issues caused by incomplete or dangling segments.
-However, to be precise, it doesn’t actually *recover* missing data. It rewrites all reachable content from the latest valid head state, discarding any broken or unreachable data.
+Offline compaction is simple but powerful. It rewrites the repository into a clean, consistent state and can often _heal_ issues caused by incomplete or dangling segments.
+However, to be precise, it doesn’t actually _recover_ missing data. It rewrites all reachable content from the latest valid head state, discarding any broken or unreachable data.
 If the missing segments are part of the head state itself, compaction will fail and you’ll need to restore from backup.
 (Recommended Reading : [How to run offline compaction in AEM on Windows](/blog/how-to-run-offline-compaction-in-aem-on-windows))
 
@@ -71,6 +73,7 @@ Here’s what I told them to do:
    ```
    java -jar oak-run.jar compact --force /path/to/segmentstore
    ```
+
 3. Let it finish — depending on repository size, this can take anywhere from minutes to hours.
 4. Start AEM again and verify the instance starts cleanly.
 
@@ -78,14 +81,14 @@ If offline compaction doesn’t fix it, the next step is to **restore from a kno
 
 Once you recover, you absolutely need to prevent it from happening again. These are non-negotiable habits if you’re running AEM with TarMK:
 
-* Always stop AEM gracefully. Never kill the Java process.
-* Schedule compaction and GC during maintenance windows.
-* Avoid restarting immediately after compaction; let it settle.
-* Never take file-level backups of a live repository.
-* Monitor disk health and performance.
-* Don’t mix repositories between environments — never copy a segmentstore folder from one instance to another.
+- Always stop AEM gracefully. Never kill the Java process.
+- Schedule compaction and GC during maintenance windows.
+- Avoid restarting immediately after compaction; let it settle.
+- Never take file-level backups of a live repository.
+- Monitor disk health and performance.
+- Don’t mix repositories between environments — never copy a segmentstore folder from one instance to another.
 
- **Quick Recovery Checklist**
+  **Quick Recovery Checklist**
 
 1. Stop AEM.
 2. Backup the current segmentstore (copy it elsewhere).
@@ -94,19 +97,21 @@ Once you recover, you absolutely need to prevent it from happening again. These 
    ```
    java -jar oak-run.jar check --bin=-1 /path/to/segmentstore
    ```
+
 4. Run offline compaction:
 
    ```
    java -jar oak-run.jar compact --force /path/to/segmentstore
    ```
+
 5. Restart and verify.
 6. If still broken → restore from a valid, fully stopped backup.
 
 So, the next time someone pings you saying, “We’re seeing SegmentNotFoundException,” remember:
 
-* Check the logs for compaction or GC messages first.
-* Inspect the segmentstore for damaged or missing files.
-* Run `oak-run check` on a copy.
-* Then decide between compaction and restore.
+- Check the logs for compaction or GC messages first.
+- Inspect the segmentstore for damaged or missing files.
+- Run `oak-run check` on a copy.
+- Then decide between compaction and restore.
 
 Don’t rush to replace your repository unless you’re sure it’s unrecoverable. Most of the time, with a clean shutdown, safe compaction practices, and good backups, you’ll never see this error again.
