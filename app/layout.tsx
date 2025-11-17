@@ -3,6 +3,7 @@ import 'pliny/search/algolia.css'
 import 'remark-github-blockquote-alert/alert.css'
 
 import { Inter } from 'next/font/google'
+import Script from 'next/script'
 import { Analytics, AnalyticsConfig } from 'pliny/analytics'
 import { SearchProvider, SearchConfig } from 'pliny/search'
 import Header from '@/components/Header'
@@ -76,6 +77,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
       <meta name="google-site-verification" content="NjQ-9HWnNBWTNazj5uwnBp-gBP_qDFWMm0UcKICmxBM" />
       <meta name="google-adsense-account" content="ca-pub-9693146779273135"></meta>
+      <Script
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9693146779273135"
+        strategy="afterInteractive"
+        crossOrigin="anonymous"
+      />
       <link rel="alternate" type="application/rss+xml" href="/feed.xml" />
       <body className="bg-white pl-[calc(100vw-100%)] text-black antialiased dark:bg-gray-950 dark:text-white">
         <ThemeProviders>

@@ -4,15 +4,15 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
 
-// You might need to insert additional domains in script-src if you are using external services
+// Insert additional domains in script-src/frame-src/img-src if you are using external services like Google AdSense
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' www.googletagmanager.com www.google-analytics.com khalilganiga.disqus.com;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' www.googletagmanager.com www.google-analytics.com khalilganiga.disqus.com pagead2.googlesyndication.com googleads.g.doubleclick.net partner.googleadservices.com tpc.googlesyndication.com;
   style-src 'self' 'unsafe-inline' *.googleapis.com cdn.jsdelivr.net;
-  frame-src youtube.com www.youtube.com timlrx.shinyapps.io disqus.com;
-  img-src * blob: data: freeimghost.net;
+  frame-src youtube.com www.youtube.com timlrx.shinyapps.io disqus.com pagead2.googlesyndication.com googleads.g.doubleclick.net;
+  img-src * blob: data: freeimghost.net pagead2.googlesyndication.com tpc.googlesyndication.com googleads.g.doubleclick.net;
   media-src *.s3.amazonaws.com github.com raw.githubusercontent.com;
-  connect-src *;
+  connect-src * pagead2.googlesyndication.com googleads.g.doubleclick.net;
   font-src 'self' fonts.gstatic.com cdn.jsdelivr.net disqus.com;
 `
 
@@ -74,6 +74,18 @@ module.exports = () => {
         {
           protocol: 'https',
           hostname: 'freeimghost.net', // Add the hostname here
+        },
+        {
+          protocol: 'https',
+          hostname: 'pagead2.googlesyndication.com',
+        },
+        {
+          protocol: 'https',
+          hostname: 'tpc.googlesyndication.com',
+        },
+        {
+          protocol: 'https',
+          hostname: 'googleads.g.doubleclick.net',
         },
       ],
     },

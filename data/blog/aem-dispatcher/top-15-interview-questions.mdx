@@ -1,7 +1,17 @@
 ---
 title: AEM Dispatcher Series 8 - Top 15 Interview Questions
 date: '2025-10-24'
-tags: [ 'Dispatcher','Tutorial', 'AEM','Interview Questions','How To','Security','Caching','Performance']
+tags:
+  [
+    'Dispatcher',
+    'Tutorial',
+    'AEM',
+    'Interview Questions',
+    'How To',
+    'Security',
+    'Caching',
+    'Performance',
+  ]
 draft: false
 summary: The most common interview and practical questions around AEM Dispatcher. Perfect for refreshing concepts or preparing for real-world discussions.
 images: []
@@ -28,9 +38,9 @@ In this post, we’ll compile the **Top 15 AEM Dispatcher questions** that devel
 
 **Answer:**
 
-* When content is activated in AEM, the **Flush Agent** sends a request to Dispatcher.
-* Dispatcher touches a `.stat` file — a timestamp marker for cached folders.
-* Any cached file older than the `.stat` file is considered stale and re-fetched on the next request.
+- When content is activated in AEM, the **Flush Agent** sends a request to Dispatcher.
+- Dispatcher touches a `.stat` file — a timestamp marker for cached folders.
+- Any cached file older than the `.stat` file is considered stale and re-fetched on the next request.
 
 ---
 
@@ -38,10 +48,10 @@ In this post, we’ll compile the **Top 15 AEM Dispatcher questions** that devel
 
 **Answer:**
 
-* `/statfileslevel` defines the folder depth at which `.stat` files are created.
-* Higher levels allow **granular invalidation** — only affected site sections are refreshed, reducing unnecessary cache rebuilds.
-* Too low → broad invalidation, slower site.
-* Too high → some updates may not invalidate properly.
+- `/statfileslevel` defines the folder depth at which `.stat` files are created.
+- Higher levels allow **granular invalidation** — only affected site sections are refreshed, reducing unnecessary cache rebuilds.
+- Too low → broad invalidation, slower site.
+- Too high → some updates may not invalidate properly.
 
 ---
 
@@ -65,8 +75,8 @@ This ensures user-specific or personalized JSON is always fetched from Publish.
 
 **Answer:**
 
-* `/filter` controls **which URLs are allowed or denied** to reach AEM Publish (security).
-* `/cache` rules control **which files are stored** in Dispatcher cache and how they’re invalidated (performance).
+- `/filter` controls **which URLs are allowed or denied** to reach AEM Publish (security).
+- `/cache` rules control **which files are stored** in Dispatcher cache and how they’re invalidated (performance).
 
 ---
 
@@ -103,9 +113,9 @@ RewriteRule ^/my-product$ /content/mysite/en/products/my-product.html [PT,L]
 
 **Answer:**
 
-* Ensures **authenticated users** see only their own content.
-* Dispatcher keeps session info in `/directory` and can encode IDs (e.g., md5).
-* Combined with `/cache/rules`, it prevents caching of private or personalized responses.
+- Ensures **authenticated users** see only their own content.
+- Dispatcher keeps session info in `/directory` and can encode IDs (e.g., md5).
+- Combined with `/cache/rules`, it prevents caching of private or personalized responses.
 
 ---
 
@@ -113,9 +123,9 @@ RewriteRule ^/my-product$ /content/mysite/en/products/my-product.html [PT,L]
 
 **Answer:**
 
-* Nodes like `/content/user-data` may have sensitive data.
-* Dispatcher should **deny caching** and use `/filter` rules to block unauthorized access.
-* Personalized content should bypass caching entirely.
+- Nodes like `/content/user-data` may have sensitive data.
+- Dispatcher should **deny caching** and use `/filter` rules to block unauthorized access.
+- Personalized content should bypass caching entirely.
 
 ---
 
@@ -123,9 +133,9 @@ RewriteRule ^/my-product$ /content/mysite/en/products/my-product.html [PT,L]
 
 **Answer:**
 
-* `/clientheaders` lists HTTP headers that Dispatcher forwards to AEM Publish.
-* Useful for headers like `Authorization`, `Referer`, `Cookie`, or custom headers for personalization.
-* Missing headers can break AEM logic or personalization.
+- `/clientheaders` lists HTTP headers that Dispatcher forwards to AEM Publish.
+- Useful for headers like `Authorization`, `Referer`, `Cookie`, or custom headers for personalization.
+- Missing headers can break AEM logic or personalization.
 
 ---
 
@@ -133,9 +143,9 @@ RewriteRule ^/my-product$ /content/mysite/en/products/my-product.html [PT,L]
 
 **Answer:**
 
-* Defined in `/renders` section.
-* Dispatcher performs **load balancing**: it forwards requests to available instances.
-* Sticky connections can be configured for session-based traffic.
+- Defined in `/renders` section.
+- Dispatcher performs **load balancing**: it forwards requests to available instances.
+- Sticky connections can be configured for session-based traffic.
 
 ---
 
@@ -143,13 +153,13 @@ RewriteRule ^/my-product$ /content/mysite/en/products/my-product.html [PT,L]
 
 **Answer:**
 
-* Use `curl`:
+- Use `curl`:
 
 ```bash
 curl -I http://dispatcher.mysite.com/bin/my-servlet
 ```
 
-* Check `dispatcher.log` for denied or allowed messages.
+- Check `dispatcher.log` for denied or allowed messages.
 
 ---
 
@@ -157,9 +167,9 @@ curl -I http://dispatcher.mysite.com/bin/my-servlet
 
 **Answer:**
 
-* **403:** Check `/filter` rules.
-* **404:** Verify resource exists on Publish, `/filter` rules, and rewrite rules.
-* **500:** Check Publish server health (`/renders`) and Dispatcher connectivity.
+- **403:** Check `/filter` rules.
+- **404:** Verify resource exists on Publish, `/filter` rules, and rewrite rules.
+- **500:** Check Publish server health (`/renders`) and Dispatcher connectivity.
 
 ---
 
@@ -167,8 +177,8 @@ curl -I http://dispatcher.mysite.com/bin/my-servlet
 
 **Answer:**
 
-* Dispatcher treats URLs with query parameters as separate cache entries by default.
-* `/ignoreUrlParams` allows ignoring certain parameters (like `utm_source`) to avoid cache duplication.
+- Dispatcher treats URLs with query parameters as separate cache entries by default.
+- `/ignoreUrlParams` allows ignoring certain parameters (like `utm_source`) to avoid cache duplication.
 
 ---
 

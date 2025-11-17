@@ -1,7 +1,7 @@
 ---
 title: AEM Dispatcher Series 6 - Handling Vanity URLs, Sessions, and `/renders`
 date: '2025-10-24'
-tags: ['Dispatcher','Tutorial','AEM','How To','Security','Caching','Performance']
+tags: ['Dispatcher', 'Tutorial', 'AEM', 'How To', 'Security', 'Caching', 'Performance']
 draft: false
 summary: Dive deeper into advanced setup — connecting Dispatcher to multiple Publish instances, handling logged-in users securely, and implementing vanity URLs using Apache rewrites.
 images: []
@@ -17,9 +17,9 @@ And then there’s another common topic developers often encounter — vanity UR
 
 In this post, we’ll explore how the Dispatcher handles these three critical components:
 
--   `/renders`: how it connects to AEM Publish instances    
--   `/sessionmanagement`: how it handles logged-in users    
--   how to properly handle vanity URLs using Dispatcher and Apache
+- `/renders`: how it connects to AEM Publish instances
+- `/sessionmanagement`: how it handles logged-in users
+- how to properly handle vanity URLs using Dispatcher and Apache
 
 ## 1. Understanding `/renders`: Connecting Dispatcher to AEM Publish Instances
 
@@ -46,17 +46,17 @@ Whenever Dispatcher doesn’t find a cached version of a page, it fetches it fro
 
 Here’s what this configuration does:
 
--   Defines two Publish instances for load balancing.    
--   If one instance is unavailable, Dispatcher automatically switches to the next.    
--   You can define multiple renders for redundancy and scalability.
+- Defines two Publish instances for load balancing.
+- If one instance is unavailable, Dispatcher automatically switches to the next.
+- You can define multiple renders for redundancy and scalability.
 
 ### Developer Tip: When to Check `/renders`
 
 If your requests are timing out or returning `502` or `503` errors, check the following:
 
--   The Publish instance is reachable from the Dispatcher host.    
--   The hostname and port match what’s configured in AEM Publish under Apache Felix Jetty HTTP Service(`/system/console/configMgr`)    
--   Your network or firewall allows communication between Dispatcher and Publish.   
+- The Publish instance is reachable from the Dispatcher host.
+- The hostname and port match what’s configured in AEM Publish under Apache Felix Jetty HTTP Service(`/system/console/configMgr`)
+- Your network or firewall allows communication between Dispatcher and Publish.
 
 You can test connectivity directly using:
 
@@ -146,10 +146,9 @@ However, Dispatcher doesn’t automatically know how to resolve them — so we t
 
 ### How Vanity URLs Work in AEM
 
-1.  Authors define vanity paths (e.g., `/offers`) for pages.    
-2.  These paths are stored in the AEM repository.    
+1.  Authors define vanity paths (e.g., `/offers`) for pages.
+2.  These paths are stored in the AEM repository.
 3.  The Vanity URL Servlet on Publish maps them to their actual page paths.
-    
 
 However, for Dispatcher to serve these efficiently, we configure the mapping in Apache before the request reaches Dispatcher.
 
@@ -168,9 +167,9 @@ RewriteRule ^/contact$ /content/mysite/en/contact.html [PT,L]
 
 Here’s what happens:
 
--   A user requests `/offers`.    
--   Apache rewrites the URL to `/content/mysite/en/offers.html`.    
--   Dispatcher serves the cached content if available; otherwise, it fetches it from Publish.    
+- A user requests `/offers`.
+- Apache rewrites the URL to `/content/mysite/en/offers.html`.
+- Dispatcher serves the cached content if available; otherwise, it fetches it from Publish.
 
 The `[PT]` flag passes the rewritten URL through to the next handler (Dispatcher).
 
@@ -227,33 +226,29 @@ Here’s an example that combines `/renders`, `/sessionmanagement`, and caching 
 
 This setup:
 
--   Defines multiple Publish instances for redundancy.    
--   Disables caching for secure content.    
--   Handles user sessions securely.    
--   Supports vanity URLs via Apache `mod_rewrite`.
-    
+- Defines multiple Publish instances for redundancy.
+- Disables caching for secure content.
+- Handles user sessions securely.
+- Supports vanity URLs via Apache `mod_rewrite`.
+
 ## 5. Developer Troubleshooting Checklist
 
 ```markdown
-| Issue                               | Check                                                               |
-| ----------------------------------- | ------------------------------------------------------------------- |
-| Requests timing out                 | Verify `/renders` hostnames and ports are reachable.                |
-| Logged-in content being cached      | Check `/cache` rules and `/sessionmanagement`.                      |
-| Vanity URLs returning 404           | Confirm rewrite rules and `/filter` paths.                          |
-| Multiple login sessions conflicting | Ensure unique `/directory` and encoding settings per farm.          |
-
+| Issue                               | Check                                                      |
+| ----------------------------------- | ---------------------------------------------------------- |
+| Requests timing out                 | Verify `/renders` hostnames and ports are reachable.       |
+| Logged-in content being cached      | Check `/cache` rules and `/sessionmanagement`.             |
+| Vanity URLs returning 404           | Confirm rewrite rules and `/filter` paths.                 |
+| Multiple login sessions conflicting | Ensure unique `/directory` and encoding settings per farm. |
 ```
 
-----------
+---
 
 ## Key Takeaways
 
--   `/renders` define which Publish servers Dispatcher communicates with.
-    
--   `/sessionmanagement` isolates and secures authenticated user sessions.
-    
--   Vanity URLs require Apache rewrite configuration to work seamlessly with Dispatcher.
-    
--   Developers should test vanity rules, session behavior, and render connectivity locally before deployment.
+- `/renders` define which Publish servers Dispatcher communicates with.
+- `/sessionmanagement` isolates and secures authenticated user sessions.
+- Vanity URLs require Apache rewrite configuration to work seamlessly with Dispatcher.
+- Developers should test vanity rules, session behavior, and render connectivity locally before deployment.
 
 **Next:** [Part 7 — AEM Dispatcher Troubleshooting: A Developer’s Debugging Playbook](/blog/aem-dispatcher/dev-guide-part7)

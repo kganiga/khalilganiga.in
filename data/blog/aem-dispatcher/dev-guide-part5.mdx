@@ -1,18 +1,19 @@
 ---
 title: AEM Dispatcher Series 5 - When and How to Clear Cache
 date: '2025-10-24'
-tags: [ 'Dispatcher','Tutorial','AEM','How To','Security','Caching','Performance']
+tags: ['Dispatcher', 'Tutorial', 'AEM', 'How To', 'Security', 'Caching', 'Performance']
 draft: false
 summary: Understand how AEM keeps cache fresh using the .stat file mechanism. Learn when and how Dispatcher marks content as stale, what /statfileslevel does, and how asset updates trigger invalidation.
 images: []
 layout: PostLayout
 isfeatured: false
 ---
-In the previous post, we learned that when your page content doesn’t update, it’s usually because of stale cache.  
-Now comes the next big question:  
 
- - How does AEM know when to clear that cache?   
- - And when exactly does dispatcher decide something is “outdated”?
+In the previous post, we learned that when your page content doesn’t update, it’s usually because of stale cache.  
+Now comes the next big question:
+
+- How does AEM know when to clear that cache?
+- And when exactly does dispatcher decide something is “outdated”?
 
 That’s where the `.stat` file comes into the picture.
 
@@ -32,9 +33,9 @@ AEM sends a signal to Dispatcher through a Flush Agent, sometimes called a Dispa
 
 Here’s what happens under the hood:
 
-1.  You publish a page or asset in AEM.    
-2.  The Flush Agent sends an HTTP request to Dispatcher at `/dispatcher/invalidate.cache`.    
-3.  Dispatcher updates its internal timestamps (`.stat` files) to mark affected cached content as stale.    
+1.  You publish a page or asset in AEM.
+2.  The Flush Agent sends an HTTP request to Dispatcher at `/dispatcher/invalidate.cache`.
+3.  Dispatcher updates its internal timestamps (`.stat` files) to mark affected cached content as stale.
 
 > Important: Dispatcher **doesn’t delete cached files immediately**. It
 > uses the `.stat` file to track whether a cached file is fresh or stale.
@@ -44,9 +45,9 @@ Whenever content changes, Dispatcher “touches” (updates) the timestamp on th
 
 Here’s what that means:
 
--   Each `.stat` file stores the last modified time for that directory.    
--   Any cached file older than the `.stat` file is considered stale.    
--   When a request comes in, Dispatcher checks whether the cached file is newer or older than the `.stat` timestamp.  
+- Each `.stat` file stores the last modified time for that directory.
+- Any cached file older than the `.stat` file is considered stale.
+- When a request comes in, Dispatcher checks whether the cached file is newer or older than the `.stat` timestamp.
 
 If it’s older, Dispatcher fetches a fresh version from AEM Publish and replaces the cache.
 
@@ -62,10 +63,10 @@ If it’s older, Dispatcher fetches a fresh version from AEM Publish and replace
 
 You publish `about.html` in AEM.
 
-1.  The Flush Agent notifies Dispatcher    
-2.  Dispatcher updates the `.stat` timestamp in `/en/`.    
-3.  When users request `home.html` or `about.html`, Dispatcher compares the cached file timestamp and the `.stat` timestamp.    
-4.  If `.stat` is newer, the cached page is stale, and Dispatcher gets a new copy from AEM.   
+1.  The Flush Agent notifies Dispatcher
+2.  Dispatcher updates the `.stat` timestamp in `/en/`.
+3.  When users request `home.html` or `about.html`, Dispatcher compares the cached file timestamp and the `.stat` timestamp.
+4.  If `.stat` is newer, the cached page is stale, and Dispatcher gets a new copy from AEM.
 
 The `.stat` file acts as a “last updated” signal for that folder.
 
@@ -96,11 +97,10 @@ Here’s how `/statfileslevel` affects where `.stat` files are created and how b
 
 **Explanation:**
 
-- `/statfileslevel 0` → Broadest scope; any change invalidates the entire cache.  
-- `/statfileslevel 1` → Invalidates all content under `/content/`.  
-- `/statfileslevel 2` → Invalidates only the site-level content (recommended for single-site setups).  
+- `/statfileslevel 0` → Broadest scope; any change invalidates the entire cache.
+- `/statfileslevel 1` → Invalidates all content under `/content/`.
+- `/statfileslevel 2` → Invalidates only the site-level content (recommended for single-site setups).
 - `/statfileslevel 3` → Invalidates only the locale-level content (recommended for multi-lingual sites).
-
 
 The higher the number, the more targeted the cache invalidation.
 
@@ -108,8 +108,8 @@ The higher the number, the more targeted the cache invalidation.
 
 If your site has multiple locales (`/en`, `/fr`, `/de`), and you publish `/en/about.html`:
 
--   With `/statfileslevel "2"`, it invalidates `/content/mysite/.stat` and flushes all locales (broad).    
--   With `/statfileslevel "3"`, it invalidates only `/content/mysite/en/.stat`, keeping `/fr` and `/de` cached (efficient).    
+- With `/statfileslevel "2"`, it invalidates `/content/mysite/.stat` and flushes all locales (broad).
+- With `/statfileslevel "3"`, it invalidates only `/content/mysite/en/.stat`, keeping `/fr` and `/de` cached (efficient).
 
 In production, most teams set `/statfileslevel` to 3 for multi-locale sites—it’s a balance between performance and freshness.
 
@@ -119,17 +119,16 @@ Dispatcher supports two ways to handle invalidation.
 
 ### Auto-Invalidation (Recommended)
 
--   Default behavior.    
--   `.stat` file timestamps are updated—old files stay on disk but are considered stale.    
--   The next request rebuilds only what’s needed.    
+- Default behavior.
+- `.stat` file timestamps are updated—old files stay on disk but are considered stale.
+- The next request rebuilds only what’s needed.
 
 This ensures a smooth, lazy refresh and avoids heavy cache rebuilds.
 
 ### Manual Deletion (Aggressive)
 
--   The Flush Agent can be configured to physically delete cached files.    
--   Ensures instant updates but can hurt performance when lots of files are deleted.
-    
+- The Flush Agent can be configured to physically delete cached files.
+- Ensures instant updates but can hurt performance when lots of files are deleted.
 
 Unless you have a strong reason, stick to auto-invalidation—it’s safer and more scalable.
 
@@ -142,29 +141,28 @@ You publish a new banner on `/content/mysite/en/home.html`, but your live site s
 ### Step-by-step Debug
 
 1.  **Check timestamps in cache**
-    
+
     ```bash
-    ls -l /opt/dispatcher/cache/content/mysite/en/    
+    ls -l /opt/dispatcher/cache/content/mysite/en/
     ```
-    
+
     Output:
-    
+
     ```
     -rw-r--r-- 1 apache apache  5823 Oct 24 09:00 home.html
     -rw-r--r-- 1 apache apache     0 Oct 24 08:55 .stat
-    
+
     ```
-    
+
     If `.stat` is older than `home.html`, the page isn’t invalidated yet.
-    
+
 2.  **Republish or trigger a flush**  
     Republishing updates `.stat`, making cached files stale.  
     Dispatcher will re-fetch the page on the next request.
-    
 3.  **If it still doesn’t work**  
     Check that the Flush Agent is active and configured correctly.  
     Ensure the web server (Apache/IIS) user has write permissions to update `.stat`.
-    
+
 Check `.stat` file timestamps:
 
 ```bash
@@ -184,12 +182,13 @@ Force invalidate manually (for testing):
 ```bash
 touch /opt/dispatcher/cache/content/mysite/.stat
 ```
+
 ## Best Practices for Developers
 
--   Use auto-invalidation—it’s faster, safer, and less disruptive.    
--   Tune `/statfileslevel` based on your content hierarchy.    
--   Don’t hardcode Flush Agent URLs—use environment variables.    
--   Monitor logs regularly—cache issues often start with invalidation failures.
+- Use auto-invalidation—it’s faster, safer, and less disruptive.
+- Tune `/statfileslevel` based on your content hierarchy.
+- Don’t hardcode Flush Agent URLs—use environment variables.
+- Monitor logs regularly—cache issues often start with invalidation failures.
 
 ## Example `/cache` Block (Optimized)
 
