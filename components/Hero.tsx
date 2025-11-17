@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, CSSProperties, memo } from 'react'
+import dynamic from 'next/dynamic'
+import Img from '@/components/Image'
 import Link from 'next/link'
 
 // --- CONSTANTS (Moved outside the component for performance) ---
@@ -116,46 +118,11 @@ interface Tagline {
 
 // --- SUB-COMPONENTS (Memoized for performance) ---
 
-/**
- * Renders the floating, blurred characters in the background.
- * Memoized to ensure it only renders once.
- */
-const BackgroundAnimation = memo(() => {
-  const [characters, setCharacters] = useState<Character[]>([])
-
-  useEffect(() => {
-    const generatedChars = Array.from({ length: 120 }).map((_, i) => ({
-      id: i,
-      char: CHARACTER_POOL[Math.floor(Math.random() * CHARACTER_POOL.length)],
-      colorClass: COLOR_CLASSES[Math.floor(Math.random() * COLOR_CLASSES.length)],
-      style: {
-        left: `${Math.random() * 100}%`,
-        fontSize: `${Math.random() * 1.5 + 0.5}rem`,
-        animationDuration: `${Math.random() * 20 + 25}s`,
-        // NEW: Negative delay makes the animation start immediately in a random state
-        animationDelay: `-${Math.random() * 40}s`,
-      },
-    }))
-    setCharacters(generatedChars)
-  }, []) // Empty dependency array ensures this runs only once on mount
-
-  return (
-    // NEW: Added `filter blur-sm` for a depth-of-field effect
-    <div className="pointer-events-none absolute inset-0 z-0 blur-[1px] filter">
-      {characters.map((item) => (
-        <span
-          key={item.id}
-          className={`animate-flow absolute top-0 ${item.colorClass}`}
-          style={item.style}
-        >
-          {item.char}
-        </span>
-      ))}
-    </div>
-  )
+// BackgroundAnimation is now lazy-loaded to keep it out of the initial bundle.
+const BackgroundAnimation = dynamic(() => import('./HeroBackground'), {
+  ssr: false,
+  loading: () => null,
 })
-
-BackgroundAnimation.displayName = 'BackgroundAnimation'
 
 /**
  * Renders the main hero content.
@@ -219,10 +186,13 @@ const Hero = () => {
       <BackgroundAnimation />
       <div className="relative z-10 flex w-full max-w-7xl flex-col items-center px-4 py-8 text-center sm:px-8 sm:py-12">
         <div className="mb-6">
-          <img
+          <Img
             src="/static/images/author.jpg"
             alt="Khalil Ganiga"
-            className="h-64 w-64 rounded-full shadow-lg grayscale filter"
+            className="rounded-full shadow-lg grayscale filter"
+            width={256}
+            height={256}
+            priority
           />
         </div>
         <p className="mb-2 text-lg text-gray-700 dark:text-gray-300 md:text-xl">
