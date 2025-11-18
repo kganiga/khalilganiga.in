@@ -7,8 +7,8 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 // Insert additional domains in script-src/frame-src/img-src if you are using external services like Google AdSense
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' www.googletagmanager.com www.google-analytics.com khalilganiga.disqus.com pagead2.googlesyndication.com googleads.g.doubleclick.net partner.googleadservices.com tpc.googlesyndication.com va.vercel-scripts.com *.adtrafficquality.google;
-  script-src-elem 'self' 'unsafe-inline' www.googletagmanager.com www.google-analytics.com pagead2.googlesyndication.com googleads.g.doubleclick.net va.vercel-scripts.com *.adtrafficquality.google;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' www.googletagmanager.com www.google-analytics.com khalilganiga.disqus.com pagead2.googlesyndication.com googleads.g.doubleclick.net partner.googleadservices.com tpc.googlesyndication.com va.vercel-scripts.com *.adtrafficquality.google fundingchoicesmessages.google.com;
+  script-src-elem 'self' 'unsafe-inline' www.googletagmanager.com www.google-analytics.com khalilganiga.disqus.com pagead2.googlesyndication.com googleads.g.doubleclick.net va.vercel-scripts.com *.adtrafficquality.google fundingchoicesmessages.google.com;
   style-src 'self' 'unsafe-inline' *.googleapis.com cdn.jsdelivr.net;
   frame-src youtube.com www.youtube.com timlrx.shinyapps.io disqus.com pagead2.googlesyndication.com googleads.g.doubleclick.net ep2.adtrafficquality.google www.google.com;
   img-src * blob: data: freeimghost.net pagead2.googlesyndication.com tpc.googlesyndication.com googleads.g.doubleclick.net;
