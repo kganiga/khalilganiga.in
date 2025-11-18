@@ -27,6 +27,14 @@ const siteMetadata = {
     // Please add your .env file and modify it according to your selection
     provider: '',
   },
+  ads: {
+    // Enable or disable ads site-wide. Default: true
+    enabled: true,
+    // AdSense publisher client id. Can be overridden via env in production.
+    client: process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-9693146779273135',
+    // whether to load ads on mobile devices. Keep true to show ads on mobile.
+    loadOnMobile: true,
+  },
   comments: {
     provider: 'disqus',
     disqusConfig: {

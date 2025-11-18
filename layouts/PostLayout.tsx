@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { CoreContent } from 'pliny/utils/contentlayer'
 import type { Blog, Authors } from 'contentlayer/generated'
 import Comments from '@/components/Comments'
+import AdSlot from '@/components/AdSlot'
 import Link from '@/components/Link'
 import PageTitle from '@/components/PageTitle'
 import SectionContainer from '@/components/SectionContainer'
@@ -54,6 +55,16 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <div>
                 <PageTitle>{title}</PageTitle>
               </div>
+              {/* Leaderboard ad below the title */}
+              <div className="mt-4">
+                <AdSlot
+                  className="mx-auto"
+                  style={{ display: 'block', width: 728, height: 90, margin: '0 auto' }}
+                  slot="4755654764"
+                  enabled={siteMetadata.ads?.enabled ?? true}
+                  client={siteMetadata.ads?.client}
+                />
+              </div>
             </div>
           </header>
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 dark:divide-gray-700 xl:grid xl:grid-cols-4 xl:gap-x-6 xl:divide-y-0">
@@ -93,9 +104,31 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               </dd>
             </dl>
             <div className="divide-y divide-gray-200 dark:divide-gray-700 xl:col-span-3 xl:row-span-2 xl:pb-0">
-              <div className="prose max-w-none pb-8 pt-10 dark:prose-invert">{children}</div>
+              <div className="prose max-w-none pb-8 pt-10 dark:prose-invert">
+                {children}
+                {/* In-article ad (responsive) */}
+                <div className="my-8">
+                  <AdSlot
+                    className="w-full"
+                    style={{ display: 'block', width: '100%' }}
+                    slot="2345678901"
+                    enabled={siteMetadata.ads?.enabled ?? true}
+                    client={siteMetadata.ads?.client}
+                  />
+                </div>
+              </div>
               <div className="flex items-center space-x-4 py-6">
                 <RelatedPosts tags={tags} currentSlug={slug} />
+              </div>
+              {/* Footer ad */}
+              <div className="py-6 text-center">
+                <AdSlot
+                  className="mx-auto"
+                  style={{ display: 'block', width: 320, height: 50, margin: '0 auto' }}
+                  slot="3456789012"
+                  enabled={siteMetadata.ads?.enabled ?? true}
+                  client={siteMetadata.ads?.client}
+                />
               </div>
               {siteMetadata.comments && (
                 <div

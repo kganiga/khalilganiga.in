@@ -4,13 +4,13 @@ date: '2022-08-01'
 tags: ['How To', 'Java', 'Programming']
 draft: false
 summary: Learn how to resolve PKIX path building issues during java based application development.
-images: ['/static/posts/images/pkix-0.png']
+images: ['/static/posts/images/pkix-0.webp']
 layout: PostLayout
 ---
 
 While developing java based applications, we might sometimes come across below error:
 
-![pkix-0](/static/posts/images/pkix-0.png)
+![pkix-0](/static/posts/images/pkix-0.webp)
 
 ### Root Cause :
 
@@ -29,28 +29,28 @@ The solution is very simple. We just need to install the required certificates o
 
 1. Take the particular URL from the error and copy it to a browser (In the above error the url is https://maven.apache.org/).
 
-   ![pxix-url](/static/posts/images/pkix-url.png)
+   ![pxix-url](/static/posts/images/pkix-url.webp)
 
 2. Now to the left of the URL there is a lock icon. Click on this icon and a window will pop up. From the window, select Connection is secure.
 
-   ![pkix-secure](/static/posts/images/pkix-secure.png)
+   ![pkix-secure](/static/posts/images/pkix-secure.webp)
 
    and in next popup window click on Certificate is Valid.
 
-   ![pkix-secure](/static/posts/images/pkix-valid.png)
+   ![pkix-secure](/static/posts/images/pkix-valid.webp)
 
 3. Once we select the certificate, it will redirect to another window. From there we have to select the Details tab and from the Details click on Copy to File. After clicking again, a new window will pop up. In that window, select next.
 
-   ![pkix-1](/static/posts/images/pkix-1.png)
-   ![pkix-2](/static/posts/images/pkix-2.png)
+   ![pkix-1](/static/posts/images/pkix-1.webp)
+   ![pkix-2](/static/posts/images/pkix-2.webp)
 
 4. After we perform all the above steps, we will be redirected to a new window where we need to select the format for the certificate. We will have to choose DER encoded binary and click on Next.
 
-   ![pkix-3](/static/posts/images/pkix-3.png)
+   ![pkix-3](/static/posts/images/pkix-3.webp)
 
 5. Now we need to choose a location where we need to save the certificate and we also need to give some name to the certificate.
 
-   ![pkix-4](/static/posts/images/pkix-4.png)
+   ![pkix-4](/static/posts/images/pkix-4.webp)
 
 6. Once a File name is given and saved, then select Next. It will direct us to another window showing the details. If all the details are correct, click on Finish. A export Success pop up will appear.
 

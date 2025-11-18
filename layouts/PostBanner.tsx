@@ -9,6 +9,7 @@ import SectionContainer from '@/components/SectionContainer'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import RelatedPosts from '@/components/RelatedPosts'
+import AdSlot from '@/components/AdSlot'
 
 interface LayoutProps {
   content: CoreContent<Blog>
@@ -40,6 +41,16 @@ export default function PostMinimal({ content, next, prev, children }: LayoutPro
                   />
                 </div>
               </Bleed>
+            </div>
+            {/* Banner ad below the hero image */}
+            <div className="mt-4">
+              <AdSlot
+                className="mx-auto"
+                style={{ display: 'block', width: '100%' }}
+                slot="4755654764"
+                enabled={siteMetadata.ads?.enabled ?? true}
+                client={siteMetadata.ads?.client}
+              />
             </div>
             <div className="relative pt-10">
               <PageTitle>{title}</PageTitle>
