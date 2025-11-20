@@ -14,8 +14,8 @@ const ROOT = path.resolve(__dirname, '..')
 const STATIC_POSTS = process.env.IMAGES_DIR
   ? path.resolve(process.env.IMAGES_DIR)
   : fs.existsSync(path.join(ROOT, 'static', 'posts'))
-  ? path.join(ROOT, 'static', 'posts')
-  : path.join(ROOT, 'public', 'static', 'posts')
+    ? path.join(ROOT, 'static', 'posts')
+    : path.join(ROOT, 'public', 'static', 'posts')
 
 async function walk(dir, fileList = []) {
   const files = await fs.promises.readdir(dir)

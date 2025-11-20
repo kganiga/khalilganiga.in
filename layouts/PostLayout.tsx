@@ -59,7 +59,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <div className="mt-4">
                 <AdSlot
                   className="mx-auto"
-                  style={{ display: 'block', width: 728, height: 90, margin: '0 auto' }}
+                  style={{ display: 'block', width: '100%', maxWidth: 728, margin: '0 auto' }}
                   slot="4755654764"
                   enabled={siteMetadata.ads?.enabled ?? true}
                   client={siteMetadata.ads?.client}
@@ -124,7 +124,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <div className="py-6 text-center">
                 <AdSlot
                   className="mx-auto"
-                  style={{ display: 'block', width: 320, height: 50, margin: '0 auto' }}
+                  style={{ display: 'block', width: '100%', maxWidth: 320, margin: '0 auto' }}
                   slot="3456789012"
                   enabled={siteMetadata.ads?.enabled ?? true}
                   client={siteMetadata.ads?.client}
@@ -187,6 +187,15 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                   &larr; Back to the blog
                 </Link>
               </div>
+              {/* Vertical/autorelaxed ad below the back link */}
+              <AdSlot
+                className="mx-auto py-6 text-center"
+                style={{ display: 'block', width: '100%' }}
+                slot="8631089083"
+                adFormat="autorelaxed"
+                enabled={siteMetadata.ads?.enabled ?? true}
+                client={siteMetadata.ads?.client}
+              />
             </footer>
           </div>
         </div>
