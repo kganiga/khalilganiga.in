@@ -1,0 +1,63 @@
+---
+title: AEM Caching Part 2 - Practical Mid-Level Strategies for Dynamic Content and Dispatcher Configuration
+date: '2025-11-21'
+tags: ['AEM Caching', 'Performance', 'Dispatcher', 'Tutorial', 'How To', 'Security', 'Caching']
+draft: false
+summary: A tactical deep dive into mid-level AEM caching techniques—selectors, query parameters, JSON APIs, and Dispatcher rules. Learn how to stabilize cache keys, prevent cache bloat, and avoid the misconfigurations that crush performance.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+After understanding the basics of AEM caching in Part 1([Caching Basics And Dispatcher Invalidation](/blog/aem-caching/cache-basics-and-dispatcher-invalidation)), the next challenge is applying those concepts to real projects. This is where performance issues usually start to show up—dynamic content, unpredictable URLs, unstable cache keys, and Dispatcher rules that don’t match how the application behaves. To build a performant AEM site, you need to control variability and teach the Dispatcher how to treat each type of request.
+
+**_1. Pages and Selectors_**
+
+The first element worth analyzing is how pages and selectors influence caching. Standard HTML pages should always be cacheable, but they also need quick invalidation, so using a low TTL (such as 60 seconds) combined with statfile invalidation is ideal. When you introduce selectors, you’re effectively creating unique variations of the same resource. For example, `/content/site/en.light.json` and `/content/site/en.dark.json` are two distinct representations of the same path. Dispatcher treats each as a completely separate cache entry, which is exactly what you want—_as long as those variations are predictable_. The mistake teams make is abusing selectors and ending up with dozens of URL variations that all hit AEM for no real benefit. Selectors should only be introduced when they create a stable and meaningful representation of content—not as an easy escape mechanism for dynamic logic.
+
+**_2. Query Parameters (The Cache Killer)_**
+The next major problem is query parameters. By nature, query parameters destroy caching because they imply that the response can change for every different parameter. Dispatcher will not cache them unless you explicitly configure rules that define which parameters matter and which should be ignored. Most parameters—like `utm_source`, `utm_campaign`, and `gclid`—do not change the page content. They only exist for analytics and should never create new cache entries. Using `ignoreUrlParams` in `dispatcher.any` allows you to strip away these useless parameters before the Dispatcher generates a cache key. Once configured correctly, `/page.html?utm_source=email` and `/page.html?utm_source=ad` will map to a single cached version of `page.html`, significantly improving cache hit ratios and reducing load on Publish.
+
+**_3. Assets and ClientLibs (Cache Forever)_**
+
+Assets and ClientLibs follow a different rule: anything versioned should be cached as long as possible. Versioned URLs (for example, `/etc.clientlibs/site/clientlib.css?12345`) inherently guarantee that the content changes only when the URL changes. This makes them perfect candidates for aggressive caching. Using `mod_headers`, you can assign them a long `max-age` along with `immutable`, telling browsers and CDNs they never need to revalidate these files. This saves round-trips, increases performance, and reduces server overhead.
+
+**_4.Caching API and JSON Responses_**
+
+As AEM moves more toward headless and hybrid models, JSON endpoints become just as important as HTML pages. Sling Model Exporters, custom APIs, and Core Components produce JSON that must also be cached. The key is ensuring the API URLs are stable and deterministic. A URL like `/bin/customapi?path=/content/site/en&limit=10` is inherently uncacheable because it depends on query parameters. Instead, your JSON responses should be tied to predictable, content-based paths such as `/content/site/en/navigation.nav.json` or `/content/site/en/products.product-list.10.json`. These URLs can be cached because they rely on selectors and path structure—mechanisms the Dispatcher can understand and store efficiently.
+
+**_5.Sling Resource Resolution and Cache Keys_**
+
+One often-overlooked detail is how Sling Resource Resolution affects caching. If AEM maps a vanity URL like `/my-cool-page` to `/content/site/en.html`, the Dispatcher only sees the vanity URL, not the actual JCR path. If your cache rules only allow caching for `/content/site/*` but not for the vanity URL, the request will always bypass cache. You need to configure your filter and cache rules to include all public-facing URL patterns—not just the repository paths—otherwise you’ll keep hitting Publish without realizing why.
+
+## **Common Misconfigurations and Diagnosis**
+
+Misconfiguration is a huge source of performance problems. A common mistake is allowing any path that ends in `.json`, which unintentionally exposes endpoints like `/bin/querybuilder.json`. This not only presents security risks but also opens the door for expensive, uncacheable requests. The correct approach is to deny high-risk paths like `/bin/*` and explicitly allow JSON only under safe content paths.
+
+    ```text
+    # DANGER: Allows /bin/querybuilder.json
+    /0002 { /type "allow" /glob "**.json" }
+    ```
+
+    **Fix:**
+
+    ```text
+    /0001 { /type "deny" /glob "/bin/*" }
+    /0002 { /type "allow" /glob "/content/wknd/**.json" }
+    ```
+
+**Ineffective Statfiles Level**
+
+Statfiles are another area where teams stumble. If you set `statfileslevel` too low, every small content update invalidates massive sections—or even the entire cache—leading to continuous cache misses and high Publish load. If it’s set too high, shared components might not invalidate properly, causing stale content to persist in cache. The right level depends on your content structure, but most sites perform best with a level of 2 or 3. If you notice that a minor text change forces a complete cache rebuild, your statfiles level is wrong.
+
+**Debugging with Logs**
+
+Debugging cache issues requires reading the Dispatcher logs. With debug logging enabled, you’ll see messages like “Checking cache validity for …” which show how statfiles are being evaluated. “URI does not match any cache rules” explains why a request skipped cache, and “Filter rejects” shows why a filter blocked a request. These logs are your most valuable tool for understanding cache behavior; guessing or trial-and-error will waste hours.
+
+**The overarching principle here is simple**: stop relying on Dispatcher defaults. Defaults are generic and rarely match your site’s architecture. Build a clean, intentional configuration: allow only the URLs you serve, deny everything else, ignore unnecessary parameters, aggressively cache versioned ClientLibs, and ensure selectors and JSON endpoints are predictable.
+
+The work you do at this level defines how your system behaves under real traffic. A well-designed cache strategy can carry you through heavy load without touching the Publish tier. A poorly designed one guarantees slow pages, cache misses, and production issues.
+
+## **Next Up**
+
+[Part 3](/blog/aem-caching/high-availability-caching-architecture) will dive into enterprise-level caching—multi-CDN setups, GraphQL caching, advanced invalidation patterns, and global high-availability strategies for sustaining massive worldwide traffic.

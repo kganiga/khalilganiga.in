@@ -1,0 +1,108 @@
+---
+title: AEM Caching Part 3 - High-Traffic Architecture, Multi-CDN Design, GraphQL Caching, and System-Level Stability
+date: '2025-11-21'
+tags: ['AEM Caching', 'Performance', 'Dispatcher', 'Tutorial', 'How To', 'Security', 'Caching']
+draft: false
+summary: A detailed architectural guide to building globally scalable AEM caching—covering multi-CDN setups, GraphQL caching, flush strategies, surge protection, segmentation, and advanced invalidation patterns. Learn how to keep Publish stable even under massive traffic.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+You’ve already learned the fundamentals and the tactical configurations. Now we’re moving into the architectural mindset required to run a high-traffic, multi-region AEM platform reliably. At this level, caching isn’t just a performance trick — it becomes the backbone of system stability. The only way to keep Publish healthy under real-world load is to ensure that almost no request ever reaches it. Everything else must be absorbed by the layers in front: the CDN and the Dispatcher.
+
+Before designing these layers, you must be solid on the metrics that actually matter in real environments — Cache Hit Ratio (CHR), cache coverage, and the meaning of hit, pass, and miss. These numbers tell you immediately whether your caching architecture works or is silently leaking traffic to the Origin.
+
+Every request that goes through a cache ends up in exactly **one** of these buckets:
+
+- A **hit** returns content directly from the cache
+- A **miss** means the content was eligible but unavailable or stale; the cache fetches from Origin and stores it.
+- A **pass** means the request was intentionally excluded from cache — usually because of
+  - “no-store”, “private”, or “no-cache” headers
+  - Certain HTTP methods
+  - Authentication rules
+  - Explicit rules in CDN/dispatcher: “do not cache this path”
+
+**Cache Hit Ratio (CHR)** is the percentage of requests served directly from cache.  
+calculated as `Cache Hit Ratio = Hits / (Hits + Misses)`
+
+A healthy AEM architecture looks like this:
+
+- **95%+ hits at the CDN**
+- **90%+ hits at the Dispatcher for the remaining requests**
+- **&lt;1% of total traffic reaching Publish**
+
+Falling below these numbers means either URL instability, misconfigured filters, poor invalidation, or improper segmentation.
+
+**Cache Coverage** measures how much of your site is actually cacheable.Usually calculated as :
+`Cache Coverage = (Hits + Misses) / (Hits + Misses + Passes)`
+
+Even with a good CHR, low coverage means most of your pages rely on Publish. Good coverage comes from stable URLs, controlled selectors, predictable JSON endpoints, correct header usage, and isolating dynamic content behind small AJAX fragments instead of injecting personalization into entire pages.
+
+Passes must be intentional. Unintentional passes are the #1 source of performance issues because they bypass both caching layers and hit Publish directly.
+
+Once you understand these mechanics, the multi-tier architecture makes sense. Enterprise systems always rely on layered caching — never a single cache.
+
+The CDN is the first and strongest layer. Its job is to absorb global traffic, handle geo-routing, block bad traffic, and serve stable content for days or even weeks using long `s-maxage` headers. The Dispatcher is the second layer, handling shorter-lived HTML and JSON caching, request filtering, and load balancing. Publish is the final fallback only for cases that truly require dynamic rendering.
+
+A simplified view of multi-tier division looks like this:
+
+```markdown
+| Layer              | Responsibility                                     | Key Metric     | Typical Cache Timeframe     |
+| ------------------ | -------------------------------------------------- | -------------- | --------------------------- |
+| **L1: CDN**        | Edge caching, geo-routing, bulk traffic absorption | CDN CHR        | Days/weeks (stable assets)  |
+| **L2: Dispatcher** | First-hop cache, filters, load balancing           | Dispatcher CHR | Seconds/minutes (HTML/JSON) |
+| **L3: Publish**    | Origin render, Sling resolution, final fallback    | Origin TTFB    | N/A (not cached)            |
+```
+
+If you’re operating in multiple regions, you need to extend this approach globally. One CDN may not be enough — either for worldwide coverage or for redundancy. When you place your own CDN (like Akamai) in front of Adobe’s managed Fastly CDN, the architecture must be precise. The front CDN must preserve `X-Forwarded-Host` and provide the `X-AEM-Key` for security, and it must honor the `s-maxage` values from the Dispatcher so content stays fresh across all layers. In more advanced setups, CDNs use geo-segmentation to cache region-specific variants — such as currency, product data, or localized images — using headers or cookies as part of the cache key.
+
+![aem caching](/static/posts/images/aem-caching_khalil-ganiga.png)
+
+**Core HTTP caching headers**
+
+- **Cache-Control: max-age=N** - How long (in seconds) the **browser** can cache the resource.
+- **Cache-Control: s-maxage=N** - Overrides max-age for **shared caches** (CDNs, proxies).
+- **stale-while-revalidate=N** - Lets the CDN keep serving a **stale** response _while_ it re-validates in the background.
+- **stale-if-error=N** - If origin is failing (e.g. 500, timeout, connection issue), CDN continues to serve the **stale** cached response instead of an error, For up to N seconds.
+- **Surrogate-Control** (Fastly-specific) Used especially when **BYO CDN** is in front of Fastly. You can tell Fastly: “You cache for 0 seconds” (`max-age=0`), while some other CDN or browser still caches based on `Cache-Control`. Basically: separate TTL for Fastly vs downstream caches.
+
+Modern AEM installations rely more on JSON and GraphQL than traditional HTML. The Dispatcher can only cache GET requests, so GraphQL should be designed with cacheability in mind: stable, predictable GET URLs tied to content paths, often using selectors. POST-based GraphQL calls bypass caching entirely and should be reserved only for filtered, user-specific data. The SPA Editor’s `.model.json` output follows the same logic: treat it like HTML, use low TTL, and rely on statfile-driven invalidation.
+
+The most important architectural safeguard is smart invalidation. The Publish instance uses flush agents to notify the Dispatcher when content changes. Default flush agents handle statfile touches and file deletions. Custom flush agents can target third-party CDNs or specific subtrees for specialized invalidation. This prevents the dreaded “nuclear flush” where the entire site cache disappears on a single activation.
+
+Segmenting your cache is the difference between surviving global traffic and crashing during a normal workday. If your content structure is `/content/site/us`, `/content/site/eu`, `/content/site/apac`, then a statfileslevel of 2 keeps each region isolated. Updating `/us/page.html` only invalidates the `/us` subtree. `/eu` and `/apac` remain hot, keeping global CHR high.
+
+Without segmentation, one editor publishing a minor change can flush the entire cache worldwide — instantly pushing thousands of misses to the Dispatcher and dozens of requests to Publish, creating a thundering herd.
+
+You avoid thundering herds with two techniques:
+
+- **stale-while-revalidate**, which lets the CDN/Dispatcher return stale content instantly while refreshing the cache in the background
+- small **random TTL jitter**, so major pages don’t expire simultaneously for millions of users
+
+These two techniques stabilize system load far better than any hardware scaling.
+
+Many real-world bottlenecks emerge from mixing dynamic and static content incorrectly. A personalized “Hello John” header kills cacheability for the entire page. The fix is simple: Sling Dynamic Include.
+
+Region-based deployments benefit even more from this tiered logic. If `/us`, `/eu`, and `/apac` are isolated at the Dispatcher level and routed via CDN geo-routing, then traffic spikes in one region never affect Publish nodes in another. CDN caching combined with statfile invalidation creates the illusion of real-time content while delivering at edge speed.
+
+Heavy JSON feeds are another performance killer when implemented under `/bin` with query parameters. The correct pattern is to bind the data to stable content paths and make them cacheable. A feed like `/bin/productdata.json` should become `/content/products/all.json`, backed by a synthetic resource or Sling model, and governed by a short TTL plus a custom flush agent.
+
+At this architectural level, caching is no longer about convenience — it’s about consistency, global uptime, and cost efficiency. You must understand the difference between TTL-based expiry and dependency-based invalidation, the role of segmentation, the meaning of pass vs miss, and how cookies or query parameters fragment cache.
+
+To help validate your architecture, here’s a solid production-readiness checklist:
+
+```markdown
+| Area         | Checklist Item                                                                                | Status |
+| ------------ | --------------------------------------------------------------------------------------------- | ------ |
+| Foundation   | Filter rules allow **only** required public paths (e.g., /content, /etc.clientlibs, assets).  | ☐      |
+| Invalidation | `statfileslevel` correctly set (e.g., 2 or 3) for safe and targeted invalidation.             | ☐      |
+| Headers      | All versioned assets use **max-age** with **immutable** for long-term caching.                | ☐      |
+| HTML         | Pages rely on low max-age or statfile-driven invalidation for freshness.                      | ☐      |
+| APIs         | High-volume JSON/GraphQL endpoints use GET and stable, cacheable URLs.                        | ☐      |
+| Stability    | `stale-while-revalidate` enabled for high-traffic HTML and API responses.                     | ☐      |
+| Monitoring   | CDN + Dispatcher logs tracked for CHR trends and anomalies.                                   | ☐      |
+| Security     | X-Forwarded-For/X-Forwarded-Host validated and logged to prevent spoofing and routing issues. | ☐      |
+```
+
+Mastering caching at this level is what makes an AEM architect effective. It’s not just about setting TTLs or enabling a CDN — it’s about building a layered, segmented, predictable system that performs the same under normal load and under global spikes. Once you can control CHR, coverage, invalidation, segmentation, and request behavior across all layers, you can scale AEM to almost any traffic profile without risking the health of your Publish tier.

@@ -26,7 +26,7 @@ const FeaturedArticles: FC<FeaturedArticlesProps> = memo(({ posts }) => {
               <div className="flex">
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="ml-2 mt-2 text-left text-sm font-medium text-primary-700 transition-colors duration-200 hover:text-primary-500 dark:text-gray-300 dark:hover:text-primary-500"
+                  className="ml-2 mt-2 text-left text-sm font-medium capitalize text-primary-700 transition-colors duration-200 hover:text-primary-500 dark:text-gray-300 dark:hover:text-primary-500"
                   aria-label={`View post ${post.title}`}
                 >
                   {post.title}

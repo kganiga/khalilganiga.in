@@ -1,0 +1,147 @@
+---
+title: AEM Caching Series 1 - Cache Basics And Foundational Dispatcher Invalidation
+date: '2025-11-21'
+tags: ['AEM Caching', 'Performance', 'Dispatcher', 'Tutorial', 'How To', 'Security', 'Caching']
+draft: false
+summary: A clear, practical breakdown of how caching works across AEM’s CDN, Dispatcher, and Publish tiers. Learn why caching is mandatory for performance and how invalidation rules determine site speed and stability.
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+When you talk about performance in any AEM powered web application, the first thing that comes to mind is **caching**. It’s not because AEM Publisher is “slow” it’s because Publisher is designed to assemble content dynamically. Every uncached request forces AEM to resolve resources, execute Sling models, and render HTL. That process is expensive. On a high-traffic site, skipping caching is a guaranteed way to overload your Publish tier with high CPU cycles.
+
+Caching exists to protect the AEM Origin layer and serve users pre-built responses at scale.
+
+### **What “Cache” Really Means in a Web Application**
+
+A cache acts like short-term memory for work the server has already done. When a server spends CPU time generating a page—like a personalized dashboard—it stores the final output so it doesn’t have to redo the same computation seconds later. If the next request is similar, the system delivers the cached result instantly. This eliminates redundant processing and is one of the biggest drivers of web performance.
+
+### **How a Request Moves Through AEM**
+
+A typical request path looks like this:
+
+`Browser → CDN → Dispatcher → AEM Publish → Response`
+
+1.  **Browser:** The user sends a request (`GET /content/wknd/us/en.html`).
+2.  **CDN (Highly recommended for enterprise setups):** Networks like Akamai, Cloudflare, or Fastly attempt to serve the cached page. If they don’t have it cached, they forward the request downstream.
+3.  **Dispatcher:** Adobe’s mandatory caching and security layer running on Apache HTTP Server with the Dispatcher module.  
+    Its responsibilities:
+
+    - Serve cached files from local disk
+    - Enforce security rules by filtering bad requests
+    - Load balance across Publish instances
+
+4.  **AEM Publish:**  
+    The Origin tier. Only handles requests that could not be served from cache. It resolves resources, executes logic, renders HTML/JSON, and sends the response.
+5.  **Return Path:** The response flows back through Publisher, Dispatcher, CDN, and finally the browser.
+
+Most performance problems start with misconfigured Dispatcher rules.
+
+## **What a CDN Actually Is**
+
+CDN is a globally distributed network of edge servers that store cached versions of your site’s content—HTML, images, PDFs, JS, CSS, APIs—closer to users around the world.  
+Instead of every request traveling all the way to your cloud region, the CDN responds from the nearest physical location.
+
+## **Why a CDN Matters When Dispatcher Already Handles Caching**
+
+If Dispatcher caches pages, why bring a CDN into the picture? Because Dispatcher isn’t built for global performance, traffic absorption, or edge-level security.
+
+A CDN brings several critical advantages:
+
+### **1. Geographic Speed**
+
+Dispatcher lives in one region. A CDN has hundreds of nodes across continents.  
+Users get content from the closest edge, not your datacenter.
+
+### **2. Massive Traffic Absorption**
+
+CDNs can absorb traffic spikes from:
+
+- marketing campaigns
+- viral news
+- product launches
+
+Dispatcher cannot handle billions of requests; edge networks can.
+
+### **3. Higher Cache Hit Ratios**
+
+CDNs are designed to aggressively cache and optimize delivery. They support advanced rules that Dispatcher simply doesn’t.
+
+### **4. Security at the Edge**
+
+A CDN adds:
+
+- DDoS protection
+- WAF
+- Bot management
+- Rate limiting
+- Geo-blocking
+
+Without a CDN, every attack hits your infrastructure first.
+
+### **5. Offloading Large Assets**
+
+Images, PDFs, and JS/CSS files generate massive bandwidth. Serving them from edge caches is faster and cheaper.
+
+Think of it like this:
+
+- CDN protects everything upstream
+- Dispatcher protects the Publish tier
+- Publish should serve the smallest fraction of traffic
+
+## **Foundational Invalidation: How Dispatcher Knows Content Is Old**
+
+To maintain fresh content, outdated cache entries must be cleared. AEM handles this through two mechanisms: a **Flush Agent** or a direct **HTTP invalidation request**. Both methods trigger an update to the Dispatcher’s **statfiles**, which is the core of AEM’s cache freshness logic.
+
+A statfile is essentially a timestamp. When content is published or explicitly invalidated, Dispatcher updates this timestamp.
+
+On every incoming request, Dispatcher performs a quick comparison:
+
+- If the cached file’s timestamp is **older** than the statfile’s timestamp, the file is treated as stale.
+- The request is then forwarded to AEM Publish, which returns fresh content that Dispatcher writes back into cache.
+
+This gives you freshness without wiping out the entire cache.
+
+### **Does Invalidation Clear Everything on Every Request?**
+
+No. That’s where **`statfileslevel`** matters.
+
+`statfileslevel` defines how deep the statfile hierarchy goes within your content structure. This controls the _scope_ of invalidation:
+
+- A **low level** (e.g., `0`) invalidates the entire site for every update—causing unnecessary load and cache stampedes.
+- A **reasonable level** (usually `2` or `3`) limits invalidation to only the relevant content subtree.
+
+Configured correctly, statfile-based invalidation keeps the cache fresh while protecting AEM Publish from unnecessary traffic.
+
+## **Browser Caching (Foundational Level Only)**
+
+Another critical caching layer is the browser itself. To take advantage of it, you need to send proper caching directives from Apache using `mod_headers`. These headers tell the browser (and sometimes the CDN) how long it can safely reuse content without rechecking the server.
+
+Key headers:
+
+- **`Cache-Control: max-age=<seconds>`**  
+  Defines how long the browser should treat the resource as fresh.
+- **`Expires`**  
+  An older mechanism that sets a fixed expiration time.
+- **`ETag`**  
+  Supports validation. The browser sends `If-None-Match`, and if the resource hasn’t changed, the server responds with a lightweight **304 Not Modified**.
+
+---
+
+## **Recommended Browser Cache Strategy**
+
+```markdown
+| Asset Type                        | Recommended Strategy                 | Why                                                                          |
+| --------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------- |
+| **HTML pages**                    | Very low or zero `max-age`           | Content must stay fresh; rely on CDN and Dispatcher for speed.               |
+| **Versioned ClientLibs / Images** | Very high `max-age` (30 days–1 year) | Versioned URLs only change when content changes, safe for long-term caching. |
+| **Unversioned assets**            | Moderate `max-age` (~1 day)          | Rarely change, but still require periodic revalidation.                      |
+```
+
+The overarching goal is simple: **keep unnecessary requests away from AEM Publish.**  
+Filters, cache rules, statfiles, and CDN TTLs all exist to minimize origin traffic while keeping content accurate.
+
+## **Next Up**
+
+In [Part 2](/blog/aem-caching/dynamic-content-dispatcher-strategies), we’ll cover intermediate-level caching strategies: managing dynamic components, optimizing Sling resolution.

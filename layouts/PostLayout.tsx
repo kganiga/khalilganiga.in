@@ -125,7 +125,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                 <AdSlot
                   className="mx-auto"
                   style={{ display: 'block', width: '100%', maxWidth: 320, margin: '0 auto' }}
-                  slot="3456789012"
+                  slot="6343320175"
                   enabled={siteMetadata.ads?.enabled ?? true}
                   client={siteMetadata.ads?.client}
                 />

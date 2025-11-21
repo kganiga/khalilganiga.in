@@ -133,7 +133,7 @@ const HeroContent = memo(({ tagline }: { tagline: Tagline }) => (
     <p className="mb-4 text-lg text-gray-700 dark:text-gray-300 md:text-xl">
       Hi, I am{' '}
       <span className="font-bold text-primary-600 dark:text-primary-400">Khalil Ganiga</span>.
-      Welcome to my space.
+      Welcome to my digital space.
     </p>
     <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl md:text-5xl">
       {tagline.h1}
