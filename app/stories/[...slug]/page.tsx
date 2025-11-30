@@ -48,7 +48,7 @@ export async function generateMetadata(props: {
   const canonicalUrl = `${siteMetadata.siteUrl}/${post.path}`
 
   return {
-    title: `${post.title} | ${siteMetadata.title}`,
+    title: `${post.title}`,
     description: post.summary,
     alternates: {
       canonical: canonicalUrl,
