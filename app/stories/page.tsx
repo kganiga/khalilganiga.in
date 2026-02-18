@@ -7,25 +7,41 @@ import type { Story } from 'contentlayer/generated'
 import Image from 'next/image'
 import React from 'react'
 import PageHeader from '@/components/PageHeader'
-import Pagination from '@/components/Pagination'
 
 export default function StoriesPage() {
   const storiesPerPage = 5
-  const [currentPage, setCurrentPage] = React.useState(1)
+  const [pagesLoaded, setPagesLoaded] = React.useState(1)
   const totalPages = Math.ceil(allStories.length / storiesPerPage)
 
-  const sortedStories = allStories
-    .slice()
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  const paginatedStories = sortedStories.slice(
-    (currentPage - 1) * storiesPerPage,
-    currentPage * storiesPerPage
+  const sortedStories = React.useMemo(
+    () =>
+      allStories.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    []
   )
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page)
-  }
+  const visibleStories = React.useMemo(
+    () => sortedStories.slice(0, pagesLoaded * storiesPerPage),
+    [sortedStories, pagesLoaded]
+  )
+
+  const sentinelRef = React.useRef<HTMLDivElement | null>(null)
+  React.useEffect(() => {
+    if (pagesLoaded >= totalPages) return
+    const el = sentinelRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPagesLoaded((p) => Math.min(p + 1, totalPages))
+        }
+      },
+      { root: null, rootMargin: '200px', threshold: 0 }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [pagesLoaded, totalPages])
 
   return (
     <>
@@ -36,7 +52,7 @@ export default function StoriesPage() {
       />
       <div className="mx-auto max-w-screen-xl p-5 sm:p-10 md:p-16">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {paginatedStories.map((story: Story) => {
+          {visibleStories.map((story: Story) => {
             const imageList = story.images
               ? typeof story.images === 'string'
                 ? [story.images]
@@ -72,12 +88,13 @@ export default function StoriesPage() {
             )
           })}
         </div>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          basePath="/stories"
-          onPageChange={handlePageChange}
-        />
+        <div ref={sentinelRef} className="mt-8 flex justify-center">
+          {pagesLoaded < totalPages ? (
+            <div className="py-4 text-sm text-gray-600 dark:text-gray-300">Loading more…</div>
+          ) : (
+            <div className="py-4 text-sm text-gray-600 dark:text-gray-300">No more stories</div>
+          )}
+        </div>
       </div>
     </>
   )
