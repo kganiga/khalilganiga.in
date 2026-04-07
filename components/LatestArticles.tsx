@@ -33,7 +33,7 @@ const LatestArticles = ({ posts }) => {
               <h3 className="text-lg font-semibold capitalize text-gray-900 dark:text-gray-100 md:text-xl">
                 <Link href={`/blog/${slug}`}>{title}</Link>
               </h3>
-              <p className="mt-2 hidden line-clamp-3 text-sm text-gray-600 dark:text-gray-300 md:block">
+              <p className="mt-2 line-clamp-3 hidden text-sm text-gray-600 dark:text-gray-300 md:block">
                 {summary}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">

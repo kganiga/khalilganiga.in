@@ -160,7 +160,9 @@ export default function ListLayoutWithTags({
                               {title}
                             </Link>
                           </h2>
-                          <p className="mt-4 hidden text-sm text-gray-700 dark:text-gray-300 md:block">{summary}</p>
+                          <p className="mt-4 hidden text-sm text-gray-700 dark:text-gray-300 md:block">
+                            {summary}
+                          </p>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           {tags.slice(0, 5).map((tag) => (
