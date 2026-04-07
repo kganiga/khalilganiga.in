@@ -148,7 +148,7 @@ export default function ListLayoutWithTags({
                         <div>
                           <time
                             dateTime={date}
-                            className="block text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                            className="hidden text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 md:block"
                           >
                             {formatDate(date, siteMetadata.locale)}
                           </time>
@@ -160,7 +160,7 @@ export default function ListLayoutWithTags({
                               {title}
                             </Link>
                           </h2>
-                          <p className="mt-4 text-sm text-gray-700 dark:text-gray-300">{summary}</p>
+                          <p className="mt-4 hidden text-sm text-gray-700 dark:text-gray-300 md:block">{summary}</p>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           {tags.slice(0, 5).map((tag) => (

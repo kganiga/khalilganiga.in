@@ -20,7 +20,7 @@ const LatestArticles = ({ posts }) => {
             key={slug}
             className="flex h-auto flex-col items-start rounded-lg border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-800 md:h-64 md:flex-row md:items-center"
           >
-            <div className="w-full flex-shrink-0 border-b border-gray-200 p-4 text-center dark:border-gray-700 md:w-32 md:border-b-0 md:border-r">
+            <div className="hidden w-full flex-shrink-0 border-b border-gray-200 p-4 text-center dark:border-gray-700 md:block md:w-32 md:border-b-0 md:border-r">
               <CalendarIcon className="mx-auto h-6 w-6 text-gray-500 dark:text-gray-400" />
               <time
                 dateTime={date}
@@ -33,7 +33,7 @@ const LatestArticles = ({ posts }) => {
               <h3 className="text-lg font-semibold capitalize text-gray-900 dark:text-gray-100 md:text-xl">
                 <Link href={`/blog/${slug}`}>{title}</Link>
               </h3>
-              <p className="mt-2 line-clamp-3 text-sm text-gray-600 dark:text-gray-300">
+              <p className="mt-2 hidden line-clamp-3 text-sm text-gray-600 dark:text-gray-300 md:block">
                 {summary}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">

@@ -50,7 +50,7 @@ export default function Home({ posts }) {
           </div>
         </div>
       </div>
-      <div className="order-2 mt-12 divide-y divide-gray-200 dark:divide-gray-700 lg:order-3">
+      <div className="order-2 mt-12 hidden divide-y divide-gray-200 dark:divide-gray-700 lg:block lg:order-3">
         <div className="space-y-2 pb-8 pt-6 md:space-y-5">
           <h6 className="pt-6 text-left text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">
             Featured Musings

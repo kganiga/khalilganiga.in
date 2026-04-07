@@ -1,5 +1,6 @@
 /*
   Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=2592000
+  Content-Security-Policy: object-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:; base-uri 'none';
 
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
