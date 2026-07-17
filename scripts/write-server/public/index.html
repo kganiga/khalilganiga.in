@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Local Writing Studio</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <h1>Writing Studio</h1>
+    <p class="hint">Local only — not part of the live site.</p>
+
+    <label class="field">
+      <span>Post type</span>
+      <select id="postType">
+        <option value="blog">Blog post</option>
+        <option value="story">Story</option>
+      </select>
+    </label>
+
+    <button id="newPostBtn" class="btn btn-secondary">+ New post</button>
+
+    <h2>Drafts</h2>
+    <ul id="draftsList" class="drafts-list"><li class="muted">Loading…</li></ul>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="meta-grid">
+      <label class="field grow">
+        <span>Title</span>
+        <input id="title" type="text" placeholder="Post title" />
+      </label>
+      <label class="field">
+        <span>Slug</span>
+        <input id="slug" type="text" placeholder="auto-generated" />
+      </label>
+      <label class="field">
+        <span>Date</span>
+        <input id="date" type="date" />
+      </label>
+      <label class="field">
+        <span>Layout</span>
+        <select id="layout"></select>
+      </label>
+      <label class="field checkbox">
+        <input id="isfeatured" type="checkbox" />
+        <span>Featured</span>
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Tags (comma separated)</span>
+      <input id="tags" type="text" list="tagOptions" placeholder="how-to, aem, java" />
+      <datalist id="tagOptions"></datalist>
+    </label>
+
+    <label class="field">
+      <span>Summary</span>
+      <textarea id="summary" rows="2" placeholder="One or two sentence summary shown in cards & SEO"></textarea>
+    </label>
+
+    <div class="meta-grid">
+      <label class="field grow">
+        <span>Cover image</span>
+        <div class="cover-row">
+          <input id="coverImagePath" type="text" placeholder="/static/posts/images/…" />
+          <input id="coverImageFile" type="file" accept="image/*" hidden />
+          <button id="coverImageBtn" class="btn btn-secondary" type="button">Upload</button>
+        </div>
+      </label>
+      <label class="field grow">
+        <span>Canonical URL (optional)</span>
+        <input id="canonicalUrl" type="text" placeholder="https://…" />
+      </label>
+    </div>
+
+    <div class="toolbar" id="toolbar">
+      <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+      <button type="button" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+      <span class="sep"></span>
+      <button type="button" data-block="h2" title="Heading 2">H2</button>
+      <button type="button" data-block="h3" title="Heading 3">H3</button>
+      <button type="button" data-block="h4" title="Heading 4">H4</button>
+      <button type="button" data-block="p" title="Paragraph">¶</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• list</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. list</button>
+      <button type="button" data-block="blockquote" title="Quote">&ldquo;</button>
+      <span class="sep"></span>
+      <button type="button" id="codeInlineBtn" title="Inline code">&lt;/&gt;</button>
+      <button type="button" id="codeBlockBtn" title="Code block">{ }</button>
+      <button type="button" id="linkBtn" title="Insert link">🔗</button>
+      <button type="button" id="imageBtn" title="Insert image">🖼</button>
+      <button type="button" id="hrBtn" title="Horizontal rule">―</button>
+    </div>
+    <input id="bodyImageFile" type="file" accept="image/*" hidden />
+
+    <div id="editor" class="editor" contenteditable="true" data-placeholder="Start writing…"></div>
+
+    <div class="actions">
+      <span id="status" class="status"></span>
+      <label class="field checkbox inline">
+        <input id="draftToggle" type="checkbox" checked />
+        <span>Keep as draft</span>
+      </label>
+      <button id="saveBtn" class="btn btn-secondary">Save draft</button>
+      <button id="publishBtn" class="btn btn-primary">Publish</button>
+    </div>
+  </main>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -8,10 +8,10 @@
     "analyze": "cross-env ANALYZE=true next build",
     "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts",
     "optimize:images": "node ./scripts/optimize-images.js",
-    "convert:mdx-imgs": "node ./scripts/convert-mdx-imgs.js"
+    "convert:mdx-imgs": "node ./scripts/convert-mdx-imgs.js",
+    "write": "node ./scripts/write-server.mjs"
   },
   "dependencies": {
-    "@google-analytics/data": "^5.1.0",
     "@headlessui/react": "2.2.0",
     "@next/bundle-analyzer": "15.0.2",
     "@tailwindcss/forms": "^0.5.9",
@@ -22,7 +22,6 @@
     "date-fns": "^4.1.0",
     "esbuild": "0.20.2",
     "github-slugger": "^2.0.0",
-    "googleapis": "^148.0.0",
     "gray-matter": "^4.0.2",
     "hast-util-from-html-isomorphic": "^2.0.0",
     "lucide-react": "^0.469.0",
@@ -60,10 +59,14 @@
     "eslint-config-next": "15.0.2",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.0",
+    "express": "^4.21.1",
     "husky": "^9.0.0",
     "lint-staged": "^13.0.0",
+    "marked": "^14.1.3",
     "prettier": "^3.0.0",
     "prettier-plugin-tailwindcss": "^0.5.11",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^5.1.3"
   },
   "lint-staged": {
