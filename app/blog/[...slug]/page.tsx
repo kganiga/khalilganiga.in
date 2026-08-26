@@ -49,9 +49,15 @@ export async function generateMetadata(props: {
     }
   })
 
+  const canonicalUrl = `${siteMetadata.siteUrl}/${post.path}`
+
   return {
     title: post.title,
     description: post.summary,
+    robots: post.draft ? { index: false, follow: false } : undefined,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: post.title,
       description: post.summary,
@@ -60,7 +66,7 @@ export async function generateMetadata(props: {
       type: 'article',
       publishedTime: publishedAt,
       modifiedTime: modifiedAt,
-      url: './',
+      url: canonicalUrl,
       images: ogImages,
       authors: authors.length > 0 ? authors : [siteMetadata.author],
     },
@@ -100,6 +106,14 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
       name: author.name,
     }
   })
+  jsonLd['publisher'] = {
+    '@type': 'Organization',
+    name: siteMetadata.author,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${siteMetadata.siteUrl}${siteMetadata.image}`,
+    },
+  }
 
   const Layout = layouts[post.layout || defaultLayout]
 
@@ -120,7 +134,13 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
-          <Layout content={mainContent} authorDetails={authorDetails} next={next} prev={prev}>
+          <Layout
+            content={mainContent}
+            authorDetails={authorDetails}
+            next={next}
+            prev={prev}
+            rawText={post.body.raw}
+          >
             <MDXLayoutRenderer code={post.body.code} components={components} toc={post.toc} />
           </Layout>
         </>

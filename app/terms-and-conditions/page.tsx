@@ -3,7 +3,10 @@ import { MDXLayoutRenderer } from 'pliny/mdx-components'
 import { coreContent } from 'pliny/utils/contentlayer'
 import { genPageMetadata } from 'app/seo'
 
-export const metadata = genPageMetadata({ title: 'Terms and Conditions' })
+export const metadata = genPageMetadata({
+  title: 'Terms and Conditions',
+  canonicalUrl: 'terms-and-conditions',
+})
 
 export default function Page() {
   const termsandcondition = allTermsAndConditions.find((p) => p.slug === 'default')

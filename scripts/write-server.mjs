@@ -300,7 +300,9 @@ app.post('/api/save', (req, res) => {
     : layoutInfo.default
 
   let slug = existingSlug
-  if (!slug) {
+  if (slug) {
+    slug = slug.replace(/[\\/]/g, '').replace(/^\.+$/, '')
+  } else {
     slug = uniqueSlug(type, slugify(frontmatter.title))
   }
 

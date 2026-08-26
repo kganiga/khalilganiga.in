@@ -6,7 +6,7 @@ import siteMetadata from '@/data/siteMetadata'
 import { genPageMetadata } from 'app/seo'
 import { ArrowRight, Mail, MessageSquareText, Sparkles } from 'lucide-react'
 
-export const metadata = genPageMetadata({ title: 'Contact' })
+export const metadata = genPageMetadata({ title: 'Contact', canonicalUrl: 'contact' })
 
 const contactTopics = [
   {

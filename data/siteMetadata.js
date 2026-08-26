@@ -83,6 +83,9 @@ const siteMetadata = {
       searchDocumentsPath: 'search.json', // path to load documents to search
     },
   },
+  aiCompanion: {
+    enabled: false,
+  },
 }
 
 module.exports = siteMetadata

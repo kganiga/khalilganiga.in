@@ -11,6 +11,7 @@ import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import RelatedPosts from '@/components/RelatedPosts'
+import AISummarizer from '@/components/AISummarizer'
 
 const editUrl = (path) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
 const discussUrl = (path) =>
@@ -29,9 +30,17 @@ interface LayoutProps {
   next?: { path: string; title: string }
   prev?: { path: string; title: string }
   children: ReactNode
+  rawText?: string
 }
 
-export default function PostLayout({ content, authorDetails, next, prev, children }: LayoutProps) {
+export default function PostLayout({
+  content,
+  authorDetails,
+  next,
+  prev,
+  children,
+  rawText,
+}: LayoutProps) {
   const { filePath, path, slug, date, title, tags } = content
   const basePath = path.split('/')[0]
 
@@ -56,7 +65,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                 <PageTitle>{title}</PageTitle>
               </div>
               {/* Leaderboard ad below the title */}
-              <div className="mt-4">
+              <div className="mt-4 min-h-[90px] sm:min-h-[140px] lg:min-h-[280px]">
                 <AdSlot
                   className="mx-auto"
                   style={{ display: 'block', width: '100%', maxWidth: 728, margin: '0 auto' }}
@@ -107,7 +116,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <div className="prose max-w-none pb-8 pt-10 dark:prose-invert">
                 {children}
                 {/* In-article ad (responsive) */}
-                <div className="my-8">
+                <div className="my-8 min-h-[250px]">
                   <AdSlot
                     className="w-full"
                     style={{ display: 'block', width: '100%' }}
@@ -117,11 +126,16 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                   />
                 </div>
               </div>
+              {rawText && siteMetadata.aiCompanion?.enabled && (
+                <div className="py-6">
+                  <AISummarizer rawText={rawText} title={title} />
+                </div>
+              )}
               <div className="flex items-center space-x-4 py-6">
                 <RelatedPosts tags={tags} currentSlug={slug} />
               </div>
               {/* Footer ad */}
-              <div className="py-6 text-center">
+              <div className="min-h-[90px] py-6 text-center">
                 <AdSlot
                   className="mx-auto"
                   style={{ display: 'block', width: '100%', maxWidth: 320, margin: '0 auto' }}

@@ -3,7 +3,7 @@ import { MDXLayoutRenderer } from 'pliny/mdx-components'
 import { coreContent } from 'pliny/utils/contentlayer'
 import { genPageMetadata } from 'app/seo'
 
-export const metadata = genPageMetadata({ title: 'Privacy Policy' })
+export const metadata = genPageMetadata({ title: 'Privacy Policy', canonicalUrl: 'privacy' })
 
 export default function Page() {
   const privacyPolicy = allPrivacyPolicies.find((p) => p.slug === 'default')

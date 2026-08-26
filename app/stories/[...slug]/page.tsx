@@ -50,6 +50,7 @@ export async function generateMetadata(props: {
   return {
     title: `${post.title}`,
     description: post.summary,
+    robots: post.draft ? { index: false, follow: false } : undefined,
     alternates: {
       canonical: canonicalUrl,
     },
@@ -101,6 +102,14 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
       name: author.name,
     }
   })
+  jsonLd['publisher'] = {
+    '@type': 'Organization',
+    name: siteMetadata.author,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${siteMetadata.siteUrl}${siteMetadata.image}`,
+    },
+  }
 
   const Layout = layouts[post.layout || defaultLayout]
 
@@ -121,7 +130,13 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
-          <Layout content={mainContent} authorDetails={authorDetails} next={next} prev={prev}>
+          <Layout
+            content={mainContent}
+            authorDetails={authorDetails}
+            next={next}
+            prev={prev}
+            rawText={post.body.raw}
+          >
             <MDXLayoutRenderer code={post.body.code} components={components} toc={post.toc} />
           </Layout>
         </>

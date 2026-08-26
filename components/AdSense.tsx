@@ -27,7 +27,7 @@ export default function AdSense({ client = 'ca-pub-9693146779273135' }: { client
   return (
     <Script
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`}
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       crossOrigin="anonymous"
       onLoad={() => debug && console.log('[AdSense] script loaded', { client })}
     />

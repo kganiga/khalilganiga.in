@@ -37,7 +37,8 @@ function convert(content) {
     const alt = altMatch ? altMatch[2] : ''
     const className = classMatch ? classMatch[2] : ''
 
-    const replacement = `<Image src="${src}" alt="${alt}" className="${className}" width={1200} height={800} sizes=\"(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw\" />`
+    const classes = [className, 'h-auto w-full max-w-full object-contain'].filter(Boolean).join(' ')
+    const replacement = `<Image src="${src}" alt="${alt}" className="${classes}" width={1200} height={800} sizes=\"(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw\" />`
     return replacement
   })
 
