@@ -1,0 +1,100 @@
+---
+title: 'AEM as a Cloud Service Workflows, Part 3: Advanced Topics'
+date: '2026-08-26'
+tags: ['AEM', 'AEM as a Cloud Service', 'Workflows', 'Transient Workflow', 'Performance Tuning', 'Failure Handling', 'AEM Architecture']
+draft: false
+summary: 'Advanced AEM workflow techniques explained simply. Transient workflows, handling failures and retries, and patterns that keep workflows fast at scale.'
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+_Part 3 of 5 in a series on AEM Workflows. Part 1 covered the basic pieces. Part 2 covered what you can customize. This post assumes you are comfortable with both, and it goes further, into how workflows behave when volume, failures, and repository growth become real problems._
+
+Everything so far has assumed a small, calm world. One page, one approver, one workflow running at a time. In production, you get thousands of assets uploaded in one batch, steps that fail halfway through, and a repository that keeps growing if nobody cleans it up. This post is about handling that reality.
+
+## Why "just add a workflow" does not stay simple at scale
+
+Every time a workflow instance runs, AEM writes runtime history to the repository (the JCR) as it moves through each step. This history is what powers the Workflow Console and lets you audit exactly what happened and when. It is genuinely useful, and it also has a cost. Write enough of it, fast enough, and you get repository growth, slower reads and writes, and more work for the system's maintenance and compaction processes.
+
+This is fine for a workflow that runs a few dozen times a day. It becomes a real problem when a workflow fires on every asset in a bulk upload of ten thousand files, or on every page during a large migration.
+
+## Transient workflows
+
+A transient workflow is a workflow model marked to skip persisting most of that intermediate runtime history. The final output, like a rendition an asset processing step produced, is still saved. What gets skipped is the step by step audit trail of how the workflow got there.
+
+The benefit is real but not huge on its own: expect something like a 10 percent reduction in processing time, along with a meaningfully smaller repository footprint since you are no longer writing (and later purging) thousands of history nodes.
+
+When to use it:
+
+- High volume, repetitive workflows where you do not need a manual audit trail of every run. Bulk asset ingestion is the textbook case.
+- Any workflow where the payload's final state matters more than a record of how each intermediate step behaved.
+
+When not to use it:
+
+- If your business or compliance needs require an audit trail of workflow execution, do not make that workflow transient. You would be trading away the exact thing you need.
+- Workflows that include a Participant Step. The moment a workflow needs a human to act on a work item, AEM has to persist that state so the task can sit in someone's Inbox and survive until they get to it. In practice this means a transient workflow effectively has to stay fully automated, no human steps in the middle.
+- Workflows where a step's payload type needs external processing that itself requires history to be tracked. In these cases AEM will keep some runtime information even if the model is flagged transient, because the step genuinely needs it to function.
+
+One gotcha carried over from Part 1: never use a Goto Step inside a transient workflow. A Goto Step works by creating a background job to resume the workflow at a later point, which forces history to persist, which defeats the reason you made it transient in the first place, and it will also throw an error. If you need looping or conditional logic in a transient workflow, use an OR Split instead.
+
+## Handling failures properly
+
+A workflow step can fail. The question is what happens next, and by default, "what happens next" is often "nothing good" unless you plan for it.
+
+A few practical patterns:
+
+- **Fail loud, not silent.** Inside a custom Process Step, catch exceptions deliberately and log them with enough context (the payload path, the step name, the input arguments) to actually debug the failure later without having to reproduce it. A silent catch block that swallows an exception is the single most common cause of "the workflow just stopped and nobody knows why."
+- **Use the Failures view in the Workflow Console.** Failed workflow instances are visible there, and this should be part of your regular operational check, not something you only look at when someone complains.
+- **Design steps to be safe to retry.** If a step partially succeeds (say it wrote data to an external system, but AEM then failed to advance the workflow), running that step again should not create duplicates or corrupt state. This property is called idempotency, and it is worth deliberately designing for, not assuming you already have.
+- **Decide what "stuck" looks like, and set timeouts.** A Participant Step with no timeout can sit in someone's Inbox forever if that person is on leave. Configure timeout handling (covered in Part 1) so a stuck approval escalates or auto advances instead of quietly blocking a payload indefinitely.
+- **Keep a Goto based retry loop bounded.** If you build a retry pattern using a Goto Step and an OR Split (try the step, check success, loop back on failure), always include a maximum retry count in your condition logic. An unbounded retry loop on a failing external system will just hammer that system forever.
+
+## Concurrency and throughput
+
+AEM can run multiple workflow steps in parallel using background job queues (built on Sling Jobs). By default, the number of parallel jobs is tied to the number of processors available. Under heavy load, letting one workflow type consume all of that capacity can starve other, unrelated background processing on the same environment.
+
+Two practical levers:
+
+- Give high volume workflows their own dedicated job queue instead of sharing the default one, so a burst of asset processing does not stall unrelated jobs.
+- Prefer handler advance over other advance modes where available. It is the better performing option for moving a step forward.
+
+In Cloud Service specifically, remember that asset processing itself already happens outside AEM in the microservices layer, discussed in Part 2. So this concurrency tuning mostly matters for your own custom Process Steps and post processing workflows, not for the core rendition pipeline, which Adobe scales independently.
+
+## Repository hygiene: purging
+
+Completed and archived workflow instances need to be cleaned up, or the repository keeps growing indefinitely. AEM has a built in Workflow Purge maintenance task for this. A few things worth internalizing:
+
+- Purging needs to be configured; it does not do anything meaningful by default.
+- On environments with heavy workflow volume, the purge task can take long enough to time out before finishing a full pass, which is precisely the scenario transient workflows are meant to reduce in the first place.
+- Treat "are old workflow instances being purged on schedule" as a real operational metric on any project with meaningful workflow volume, not an afterthought.
+
+## Workflow stages, for visibility
+
+For long, multi step approval workflows, you can group steps into named stages (for example "Legal Review," "Marketing Review," "Final Sign-off") and assign each step to a stage. This shows up as a progress indicator to the person looking at a work item, so they can see roughly how far along the payload is, not just what the current step is. It is a small addition, but it meaningfully improves the experience for anyone dealing with long running approval chains.
+
+## Putting it together: a realistic advanced pattern
+
+A bulk content migration workflow that has to touch thousands of pages might combine several of the ideas in this post:
+
+1. Mark the model transient, since there is no human step and no compliance need to audit every intermediate step.
+2. Give it a dedicated job queue so it does not starve other background work during the migration window.
+3. Build the core logic as a custom Process Step, written to be safely retryable if it fails partway through a page.
+4. Use an OR Split with a bounded retry count instead of an unbounded Goto loop, for pages that fail transient errors like a timed out external call.
+5. Log failures with enough detail to act on, and check the Workflow Console's Failures view as a standard part of monitoring the migration, not just when something visibly breaks.
+6. Confirm workflow purge is actually configured and running before the migration starts, not after the repository has already grown.
+
+None of these ideas are exotic on their own. What makes a workflow "advanced" in practice is usually not one clever trick, it is combining several of these ordinary safeguards correctly, at the same time, under real load.
+
+## What's next
+
+Part 4 walks through a large scale, heavily used real world use case end to end, and shows how these advanced techniques actually get applied together in a production architecture.
+
+---
+
+**References:**
+
+- [Developing and Extending Workflows, transient workflow concept](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows)
+- [Workflow Best Practices, transient workflows, job queues, stages](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-best-practices)
+- [Performance tuning Assets, transient DAM workflows and job concurrency](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/assets/administer/performance-tuning-guidelines)
+- [AEM 6.x Performance Tuning Tips, transient workflows in context](https://experienceleague.adobe.com/en/docs/experience-cloud-kcs/kbarticles/ka-17466)
