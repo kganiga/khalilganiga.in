@@ -98,7 +98,7 @@ export default function Contact() {
         <div className="grid gap-4 md:grid-cols-3">
           {contactTopics.map((topic) => (
             <Card key={topic.title} className="p-6">
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
                 <MessageSquareText className="h-5 w-5" />
               </div>
               <h3 className="text-lg font-semibold text-gray-950 dark:text-white">{topic.title}</h3>

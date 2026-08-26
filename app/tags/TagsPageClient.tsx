@@ -75,7 +75,7 @@ export default function TagsPageClient() {
           </div>
 
           <Card className="p-6">
-            <div className="mb-5 flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+            <div className="mb-5 flex items-center gap-2 text-sm font-medium text-primary-700 dark:text-primary-300">
               <Tags className="h-4 w-4" />
               Popular topics
             </div>

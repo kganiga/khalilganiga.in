@@ -86,6 +86,10 @@ const siteMetadata = {
   aiCompanion: {
     enabled: false,
   },
+  themeColor: {
+    primary: 'blue', // Choose from: blue, pink, violet, purple, emerald, amber, orange, teal, rose, red, sky, etc.
+    gray: 'slate',    // Choose from: slate, gray, zinc, neutral, stone
+  },
 }
 
 module.exports = siteMetadata

@@ -174,7 +174,7 @@ export default function ListLayoutWithTags({
 
           {featuredPost && (
             <Card className="p-6">
-              <div className="mb-4 flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              <div className="mb-4 flex items-center gap-2 text-sm font-medium text-primary-700 dark:text-primary-300">
                 <BookMarked className="h-4 w-4" />
                 Featured article
               </div>

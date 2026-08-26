@@ -90,7 +90,7 @@ export default function Home({ posts }) {
                 />
               </div>
               <div className="border-t border-gray-200 p-5 dark:border-gray-800">
-                <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary-700 dark:text-primary-300">
                   <Code2 className="h-4 w-4" />
                   Adobe Experience Manager developer
                 </div>
@@ -159,7 +159,7 @@ export default function Home({ posts }) {
       <section>
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+            <p className="text-sm font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400">
               Fiction and reflections
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">

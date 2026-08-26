@@ -1,6 +1,35 @@
 // @ts-check
 const { fontFamily } = require('tailwindcss/defaultTheme')
 const colors = require('tailwindcss/colors')
+const siteMetadata = require('./data/siteMetadata')
+
+const tailwindColors = {
+  emerald: colors.emerald,
+  teal: colors.teal,
+  cyan: colors.cyan,
+  sky: colors.sky,
+  blue: colors.blue,
+  indigo: colors.indigo,
+  violet: colors.violet,
+  purple: colors.purple,
+  fuchsia: colors.fuchsia,
+  pink: colors.pink,
+  rose: colors.rose,
+  red: colors.red,
+  orange: colors.orange,
+  amber: colors.amber,
+  yellow: colors.yellow,
+  lime: colors.lime,
+  green: colors.green,
+  slate: colors.slate,
+  zinc: colors.zinc,
+  neutral: colors.neutral,
+  stone: colors.stone,
+  gray: colors.gray,
+}
+
+const primaryColor = tailwindColors[siteMetadata.themeColor?.primary] || colors.blue
+const grayColor = tailwindColors[siteMetadata.themeColor?.gray] || colors.slate
 
 /** @type {import("tailwindcss/types").Config } */
 module.exports = {
@@ -25,8 +54,8 @@ module.exports = {
         sans: ['system-ui', ...fontFamily.sans],
       },
       colors: {
-        primary: colors.blue,
-        gray: colors.slate,
+        primary: primaryColor,
+        gray: grayColor,
       },
       zIndex: {
         60: '60',

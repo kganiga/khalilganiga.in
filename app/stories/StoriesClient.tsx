@@ -89,10 +89,10 @@ export default function StoriesPage() {
   return (
     <div className="space-y-12 pb-16">
       <section className="relative isolate overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(14,165,233,0.08)_46%,rgba(244,63,94,0.10))] dark:bg-[linear-gradient(135deg,rgba(16,185,129,0.16),rgba(14,165,233,0.08)_46%,rgba(244,63,94,0.12))]" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-gray-500/10 dark:from-primary-500/15 dark:via-primary-500/5 dark:to-gray-500/15" />
         <div className="grid gap-8 px-5 py-10 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10 lg:py-14">
           <div className="flex flex-col justify-center">
-            <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-800 dark:border-emerald-900/80 dark:bg-emerald-950/70 dark:text-emerald-200">
+            <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-sm font-medium text-primary-800 dark:border-primary-900/80 dark:bg-primary-950/70 dark:text-primary-200">
               <Sparkles className="h-4 w-4" />
               Stories, reflections, and creative notes
             </div>
@@ -144,7 +144,7 @@ export default function StoriesPage() {
                   />
                 </div>
                 <div className="p-5 sm:p-6">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-medium text-primary-700 dark:text-primary-300">
                     <BookOpenText className="h-4 w-4" />
                     Featured musing
                   </div>

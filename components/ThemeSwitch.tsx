@@ -49,12 +49,71 @@ const Blank = () => <svg className="h-6 w-6" />
 const ThemeSwitch = () => {
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme, resolvedTheme } = useTheme()
+  const [lastEvent, setLastEvent] = useState<React.MouseEvent | null>(null)
 
   // When mounted on client, now we can show the UI
   useEffect(() => setMounted(true), [])
 
+  const handleThemeChange = (newTheme: string) => {
+    const doc = document as unknown as {
+      startViewTransition?: (cb: () => void) => { ready: Promise<void> }
+    }
+    if (
+      typeof window === 'undefined' ||
+      !doc.startViewTransition ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setTheme(newTheme)
+      return
+    }
+
+    const x = lastEvent?.clientX ?? window.innerWidth / 2
+    const y = lastEvent?.clientY ?? window.innerHeight / 2
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    )
+
+    const transition = doc.startViewTransition(() => {
+      setTheme(newTheme)
+    })
+
+    transition.ready.then(() => {
+      const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
+      document.documentElement.animate(
+        {
+          clipPath: clipPath,
+        },
+        {
+          duration: 450,
+          easing: 'ease-in-out',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      )
+    })
+  }
+
   return (
     <div className="mr-5 flex items-center">
+      <style>{`
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+          animation: none;
+          mix-blend-mode: normal;
+        }
+        ::view-transition-old(root) {
+          z-index: 1;
+        }
+        ::view-transition-new(root) {
+          z-index: 9999;
+        }
+        .dark::view-transition-old(root) {
+          z-index: 9999;
+        }
+        .dark::view-transition-new(root) {
+          z-index: 1;
+        }
+      `}</style>
       <Menu as="div" className="relative inline-block text-left">
         <div className="flex items-center justify-center hover:text-primary-500 dark:hover:text-primary-400">
           <Menu.Button aria-label="Theme switcher">
@@ -71,12 +130,13 @@ const ThemeSwitch = () => {
           leaveTo="transform opacity-0 scale-95"
         >
           <Menu.Items className="absolute right-0 z-50 mt-2 w-32 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
-            <RadioGroup value={theme} onChange={setTheme}>
+            <RadioGroup value={theme} onChange={handleThemeChange}>
               <div className="p-1">
                 <RadioGroup.Option value="light">
                   <Menu.Item>
                     {({ active }) => (
                       <button
+                        onClick={(e) => setLastEvent(e)}
                         className={`${
                           active ? 'bg-primary-600 text-white' : ''
                         } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
@@ -93,6 +153,7 @@ const ThemeSwitch = () => {
                   <Menu.Item>
                     {({ active }) => (
                       <button
+                        onClick={(e) => setLastEvent(e)}
                         className={`${
                           active ? 'bg-primary-600 text-white' : ''
                         } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
@@ -109,6 +170,7 @@ const ThemeSwitch = () => {
                   <Menu.Item>
                     {({ active }) => (
                       <button
+                        onClick={(e) => setLastEvent(e)}
                         className={`${
                           active ? 'bg-primary-600 text-white' : ''
                         } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
