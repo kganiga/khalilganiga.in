@@ -1,0 +1,112 @@
+---
+title: 'AEM as a Cloud Service Workflows, Part 2: What You Can Customize'
+date: '2026-08-26'
+tags: ['AEM', 'AEM as a Cloud Service', 'Workflows', 'Custom Workflow Step', 'OSGi', 'Asset Processing', 'AEM Architecture']
+draft: false
+summary: 'A plain guide to customizing AEM workflows in Cloud Service. Custom process steps, custom launchers, post processing for assets, and what Adobe locks down.'
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+_Part 2 of 5 in a series on AEM Workflows. If you have not read Part 1, start there. It covers the basic pieces (models, instances, steps, launchers) that this post builds on._
+
+In Part 1 we covered what every piece of a workflow is. This post is about what you, as a developer, actually get to change. In plain terms: which parts you can build yourself, and which parts Adobe wants you to leave alone in Cloud Service.
+
+## The main thing you will customize: a custom Process Step
+
+Most custom work in AEM workflows comes down to one thing. You write a Java class that runs automatically inside the workflow, with no human involved. This is the Process Step from Part 1, and here is how you build one.
+
+You implement the `WorkflowProcess` interface and override its `execute` method. You register the class as an OSGi component so AEM can find it and offer it as a step inside the Workflow Model Editor.
+
+A basic skeleton looks like this:
+
+java
+
+```java
+@Component(service = WorkflowProcess.class, property = {
+    "process.label=My Custom Workflow Process"
+})
+public class MyCustomWorkflowProcess implements WorkflowProcess {
+
+    public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap metaDataMap)
+            throws WorkflowException {
+        // your logic here
+    }
+}
+```
+
+  
+
+Inside `execute`, you get three useful objects.
+
+- `WorkItem` gives you the workflow data, including the payload path and its type (for example a JCR path).
+- `WorkflowSession` gives you full control over workflow models and running instances, so your code can start, complete, or terminate other workflow steps if needed.
+- `MetaDataMap` gives you access to any arguments configured on the step, so the same Java class can behave differently depending on how it is wired into different models.
+
+Once deployed, your class shows up by its `process.label` as a selectable step type in the Workflow Model Editor, right alongside the built in Participant Step and OR Split. From the editor's point of view, it looks native.
+
+Common reasons teams write a custom Process Step:
+
+- Validating content before it can be approved or published.
+- Calling an external system (for example a translation vendor or a PIM system).
+- Writing computed metadata back onto the payload.
+- Sending a custom notification that the built in email step cannot do.
+
+## Custom Dynamic Participant Steps
+
+You can also customize who a task gets assigned to. This is the Participant Chooser from Part 1. You implement `ParticipantStepChooser` (or write an ECMA script with a `getParticipant` function) and register it as its own OSGi service. It becomes selectable inside a Dynamic Participant Step's configuration. Typical use case: route the approval to whichever manager owns that page's locale or business unit, instead of hardcoding one approver into the model.
+
+## Custom Workflow Models
+
+You are not limited to editing the built in models. You can build entirely new ones from scratch in the Workflow Model Editor, combining out of the box steps with your custom Process Steps and Dynamic Participant Steps. Most real projects end up with two or three custom models: one for content approval, one for asset post processing, and sometimes one as a reusable sub workflow (a Container Step) for something like a legal review that gets called from multiple parent workflows.
+
+## Custom Launchers
+
+A launcher, as covered in Part 1, watches an event and starts a model automatically. You can create new launchers scoped to your own content paths, for example "start Model X whenever a page is created under /content/mysite/en." This is regular configuration work in the Workflow Launcher console, not code, and it is still fully supported in Cloud Service. Just remember from Part 1: for asset processing specifically, Cloud Service prefers a different mechanism (see the next section), so do not default to a launcher there without checking first.
+
+## Customizing asset processing: post processing workflows
+
+This is the part that catches people coming from AEM 6.5 or AMS off guard. In older AEM, if you wanted custom logic on every asset upload, you customized the DAM Update Asset workflow directly and it ran inside AEM.
+
+In Cloud Service, the default rendition, metadata, and text extraction work is handled by Asset Microservices, outside of AEM entirely. You do not touch that pipeline. What you can do is add a **post processing workflow**, which is a regular AEM workflow model that automatically runs after the microservices finish their part.
+
+Two ways to wire this up:
+
+1. **Auto start workflow on a folder.** Go to a DAM folder's Properties, open the Assets Processing tab, and pick your workflow model under Auto start Workflow. This is the recommended approach for typical, folder scoped post processing.
+2. **Custom Workflow Runner Service.** An OSGi configuration that triggers a post processing model by path pattern or by regular expression, for more advanced or cross folder scenarios than a single folder's Properties screen can express.
+
+Either way, your post processing model is built the same way as any other workflow model: drag in your custom Process Steps, add an OR Split if you need conditional logic, and so on. One config detail worth knowing: if you are extending the standard pipeline, you typically end the model with the "DAM Update Asset Workflow Completed" Process step, so AEM knows processing has actually finished and marks the asset accordingly.
+
+Auto start workflows exist specifically instead of the old launcher pattern for assets, because a launcher can fire multiple times as an asset moves through processing stages, while an auto start workflow fires exactly once, after processing is truly done. If you are customizing asset behavior in Cloud Service, prefer auto start workflows over a launcher.
+
+## What Adobe locks down in Cloud Service
+
+Not everything from older AEM carries over. A few limits worth knowing before you plan a customization:
+
+- **You cannot touch the internal asset microservices pipeline itself.** Renditions, metadata extraction, and text extraction are managed by Adobe. If you need custom rendition logic, you configure a Processing Profile or you handle it in your post processing workflow, you do not modify the core pipeline.
+- **Some legacy workflow steps are unsupported in Cloud Service.** When migrating from AEM 6.5 or AMS, Adobe's migration tooling actively strips out unsupported steps from old workflow models and rebuilds them around the supported pattern (post processing plus the completed step). If a step from an old project will not migrate, that is usually why.
+- **All code and configuration must go through your CI/CD pipeline (Cloud Manager).** You cannot hotfix a workflow's OSGi configuration directly on a running environment the way some teams used to on AMS. Everything, including your custom Process Step code and your launcher or auto start configuration, is deployed the same way as any other code change.
+- **Content under `/libs` is still off limits for direct edits**, same rule as always. Copy anything you need to customize into `/apps` first.
+
+## A simple way to decide what you need
+
+- Need logic that runs without a human, tied to a page or asset event that is not asset processing itself? Write a custom Process Step and wire it into a model with a launcher.
+- Need to route an approval to a dynamic person or group? Write a Participant Chooser for a Dynamic Participant Step.
+- Need extra processing on assets after upload? Do not write a launcher. Use a post processing workflow, either through a folder's auto start setting or the Custom Workflow Runner Service.
+- Need to reuse the same block of steps across multiple flows? Wrap it as its own model and call it with a Container Step.
+
+## What's next
+
+Part 3 goes into the advanced territory: transient workflows for performance, handling failures and retries properly, and patterns for keeping workflows fast at scale.
+
+---
+
+**References:**
+
+- [Implementing a Custom Process Step](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-step-ref)
+- [Configure and use asset microservices, including post processing workflows](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/manage/asset-microservices-configure-and-use)
+- [Process assets using asset microservices, overview](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/asset-microservices-overview)
+- [Auto start workflows (video walkthrough)](https://experienceleague.adobe.com/en/docs/experience-manager-learn/assets/configuring/auto-start-workflows)
+- [Migration Readiness Phase, notes on post processing workflows and locked down areas](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/migration-journey/readiness)
+- [Workflow Best Practices](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-best-practices)
