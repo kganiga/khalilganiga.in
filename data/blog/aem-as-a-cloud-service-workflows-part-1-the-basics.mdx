@@ -1,0 +1,103 @@
+---
+title: 'AEM as a Cloud Service Workflows, Part 1: The Basics'
+date: '2026-08-26'
+tags: ['AEM', 'AEM as a Cloud Service', 'Workflows', 'AEM Basics', 'Content Approval', 'DAM', 'AEM Architecture']
+draft: false
+summary: 'A simple, no jargon walkthrough of AEM workflow basics: models, instances, steps, launchers, and every out of the box step type explained plainly.'
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+_Part 1 of 5 in a series on AEM Workflows._
+
+If you have spent any time in AEM, you have seen a "Start Workflow" button somewhere. Publishing a page, processing an uploaded asset, requesting an approval. That is the workflow engine at work. This post breaks down what it actually is, and which piece does what. No jargon dump, just the mental model you need before we go further in this series.
+
+## What is a workflow, really?
+
+A workflow is an automated sequence of steps applied to something, usually a page or an asset. Together these are called the payload. Adobe puts it simply: workflows let you automate a series of steps performed on one or more pages or assets. For example, an editor reviews content before a site admin publishes it, and the workflow notifies each person when it is their turn to act.
+
+Think of it like a factory assembly line. The payload (page or asset) moves down the line. At each station (step), something happens to it: a check, a transformation, or a human decision. Then it moves to the next station.
+
+## The core building blocks
+
+Here is what each piece actually does.
+
+### 1\. Workflow Model
+
+This is the blueprint. It defines the steps, their order, and the logic connecting them, including branches ("if approved, go here, if rejected, go there"). You build and edit models visually in the Workflow Model Editor inside AEM.
+
+Adobe's own definition: workflow models are the representation and implementation of business processes. They typically act on pages or assets to achieve a specific result, and they consist of a series of steps that perform a specific task.
+
+### 2\. Workflow Instance
+
+When a model actually runs against a real payload, that running copy is called an instance. One model can have hundreds of instances running at once (each publish request, each asset upload, and so on spins up its own instance). The instance is effectively a snapshot or copy of the model at the moment it started.
+
+### 3\. Workflow Step
+
+Each individual box in the model is a step. A step does one distinct thing: send an email, wait for a user's decision, activate a page, run a custom script. Steps run in a specific order, and each step performs a distinct activity.
+
+When you create a brand new workflow model, AEM gives you three things by default: a Flow Start node, a Flow End node, and a dummy Step 1 (a Participant Step assigned to `admin`) sitting between them. You are meant to delete or replace Step 1 and build your real flow from there.
+
+Here is the complete set of out of the box step types you will actually work with.
+
+- **Participant Step (User/Group):** Generates a work item and assigns it to a specific user or group. The workflow pauses and will not move forward until that person completes (approves or rejects) the work item in their Inbox. This is your basic "human review" step.
+- **Dialog Participant Step:** Same as a Participant Step, but it also shows the assignee a custom dialog to fill in when they complete the work item, for example "enter a rejection reason." Whatever they enter gets written into the workflow payload's metadata, so later steps can read it.
+- **Dynamic Participant Step:** Behaves like a Participant Step, except who gets the work item is not fixed at design time. It is decided at runtime by a "Participant Chooser" (an ECMA script or a Java/OSGi service implementing `ParticipantStepChooser`). Example: assign the reviewer based on which locale the page belongs to, or pick whoever in a group has the fewest pending work items. AEM ships a couple of sample choosers out of the box (one example picks the person who started the workflow). Most real projects write their own.
+- **Process Step:** Runs automatically, no human involved. It executes either an ECMA script or a Java class registered as an OSGi service (a `WorkflowProcess`). This is where most of your custom logic lives: validations, notifications, calling external APIs, transforming content, and so on.
+- **Container Step (Sub Workflow):** Starts a different workflow model as a nested step inside the current one. Useful for reusing a common sub process (like a standard "legal review" flow) across multiple parent workflows instead of duplicating steps.
+- **OR Split / OR Join:** A branch point. Only one of the outgoing branches is chosen, based on a routing expression (a fixed rule, an ECMA script, or an external script) or based on which branch is marked "default." The matching OR Join brings the branches back together afterward.
+- **AND Split / AND Join:** Splits execution into multiple branches that all run at the same time (for example, notify legal and notify marketing at the same time), and the AND Join waits until all of them finish before continuing.
+- **Goto Step:** Jumps execution to another point in the same workflow model, used to build loops (for example, "keep asking for re approval until accepted"). One important gotcha: do not use a Goto Step inside a transient workflow. It forces the engine to persist history and breaks the point of being transient. Use an OR Split instead in that case.
+- **Dynamic Participant Step "choosers" worth knowing by name,** since interviewers love asking about them: the Initiator Participant Chooser (routes the work item back to whoever started the workflow) and the Random Participant Chooser (randomly assigns from a defined list of users) are common out of the box or community examples.
+- **Common properties shared by almost every step:** Autoadvance (skip the step automatically once its condition is met) and Timeout handling (what happens if a work item sits untouched too long, for example auto escalate or auto advance).
+
+### 4\. Workflow Launcher
+
+This is the trigger. A launcher watches for an event (for example "a page is created under /content/mysite") and automatically starts a workflow model when that event happens. Without a launcher, workflows only start manually or via code. The launcher is what makes it "automatic."
+
+### 5\. Payload
+
+The thing being acted on: a page, an asset, or a path. It is identified the moment the workflow instance is created, and it is what steps read from and act on.
+
+### 6\. Workflow Console
+
+The admin UI (`/libs/cq/workflow/content/console.html`, or reachable via Tools, Workflow) where you can see running instances, their history, failed steps, and manually start or terminate workflows.
+
+### 7\. Inbox
+
+Where end users (authors, approvers) see their work items, the tasks assigned to them by Participant Steps, and act on them (approve, reject, delegate).
+
+## How they connect, the flow in plain English
+
+1. A Launcher detects an event (or a user clicks "Start Workflow"). This creates a Workflow Instance from a Workflow Model, attached to a Payload.
+2. The engine executes the first Step after Flow Start.
+3. If it is a Process Step, it runs automatically (no human) and moves on immediately.
+4. If it is a Participant, Dialog Participant, or Dynamic Participant Step, a work item appears in someone's Inbox. The workflow pauses until a human completes it.
+5. If it hits an OR Split, it picks one branch and continues. If it hits an AND Split, it runs several branches at once and waits at the matching Join for all of them to finish.
+6. A Goto Step can send execution backward to an earlier point (for retry or loop logic), and a Container Step can hand off to a separate workflow model and wait for it to finish.
+7. This repeats until Flow End is reached, and the instance is marked complete (and archived).
+
+That is it. Every "advanced" thing you will see later in this series, custom steps, complex branching, asset processing pipelines, is just this same loop, dressed up.
+
+## Where AEM as a Cloud Service differs from on prem or AMS
+
+A few things worth knowing upfront, since we are specifically talking about Cloud Service.
+
+- **Asset processing workflows are mostly gone.** In Cloud Service, out of the box asset processing (renditions, metadata, text extraction) is handled by Asset Microservices, not the old DAM Update Asset workflow. You only write workflows for processing that microservices cannot do. These are called post processing workflows, and they run automatically after microservices finish (no launcher needed).
+- **Project workflows still exist for Sites.** Things like Project Approval Workflow, Request Launch, Request Landing Page, and Request Email are still available out of the box for content approval processes.
+- Workflow launchers and models are still authored the same way (via the Workflow Model editor and launcher config), but they now live in a Cloud Service compatible package structure (ui.apps), following the Maven project split.
+
+## What's next
+
+Part 2 will get into what you can actually customize: building custom workflow steps, custom launchers, and where the limits are in Cloud Service (what Adobe lets you touch versus what's locked down).
+
+---
+
+**References:**
+
+- [Working with Workflows](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/authoring/workflows/overview)
+- [Working with Project Workflows](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/authoring/projects/workflows)
+- [Administering Workflows (concepts)](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/sites/administering/operations/workflows)
+- [Developing and Extending Workflows](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows)
+- [Workflow Step Reference (every out of the box step, in detail)](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-step-ref)
