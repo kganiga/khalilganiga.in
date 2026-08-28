@@ -143,7 +143,7 @@ export default function Home({ posts }) {
           <LatestArticles posts={posts.slice(0, MAX_DISPLAY)} />
         </div>
 
-        <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+        <aside className="hidden space-y-5 lg:sticky lg:top-24 lg:block lg:self-start">
           <Card className="p-6 text-center">
             <SocialIcons />
           </Card>
@@ -156,7 +156,7 @@ export default function Home({ posts }) {
         </aside>
       </section>
 
-      <section>
+      <section className="hidden md:block">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400">

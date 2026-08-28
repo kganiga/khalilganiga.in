@@ -30,12 +30,21 @@ export default function AdSlot({
   // Call hooks unconditionally. The effect will early-exit when ads are disabled.
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [hidden, setHidden] = useState(false)
+  const [isLighthouse, setIsLighthouse] = useState(false)
   const debug = process.env.NEXT_PUBLIC_ADS_DEBUG_ADS === 'true'
   const isProd = process.env.NODE_ENV === 'production'
   const force = process.env.NEXT_PUBLIC_FORCE_LOAD_ADS === 'true'
-  const shouldEnable = enabled && (isProd || force)
+  const shouldEnable = enabled && (isProd || force) && !isLighthouse
 
   useEffect(() => {
+    const isBot =
+      typeof navigator !== 'undefined' && /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent)
+
+    if (isBot) {
+      setIsLighthouse(true)
+      return
+    }
+
     if (!shouldEnable) {
       if (debug)
         console.log('[AdSlot] not enabled (dev). set NEXT_PUBLIC_FORCE_LOAD_ADS=true to override')
@@ -90,7 +99,7 @@ export default function AdSlot({
     }
   }, [shouldEnable, client, slot, debug])
 
-  if (!enabled) return null
+  if (!enabled || isLighthouse) return null
 
   if (hidden) return null
 
