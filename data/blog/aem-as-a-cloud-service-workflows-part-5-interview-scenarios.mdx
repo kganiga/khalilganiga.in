@@ -1,0 +1,117 @@
+---
+title: 'AEM as a Cloud Service Workflows, Part 5: Interview Scenarios'
+date: '2026-08-26'
+tags: ['AEM', 'AEM as a Cloud Service', 'Workflows', 'Interview Preparation', 'AEM Architect', 'System Design']
+draft: false
+summary: 'Real AEM architect interview scenarios on workflows, with model answers, covering the basics, customization, advanced patterns, trigger design, and the mistakes that sound right but do not scale.'
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+_Part 5 of 5 in a series on AEM Workflows. This post assumes you have read Parts 1 to 4. It is written as a set of scenario questions, the kind an AEM architect interview actually asks, not trivia. Each one has a short model answer and, where it matters, a note on the trap most people fall into._
+
+Interviewers rarely ask “what is a Process Step.” They ask you to design something, then push on the weak point until you either defend it or admit it needs rework. This post is built the same way.
+
+## Scenario 1: “Design an approval flow for content that goes to twelve regional sites”
+
+This is close to word for word what Part 4 covers, and it is a common opening question because it looks simple and almost everyone reaches for the same wrong first answer.
+
+The trap: most candidates draw one parent workflow with an AND Split fanning out into twelve branches, one per region, joined at the end by an AND Join.
+
+Why it is wrong: an AND Split’s branches are fixed in the Workflow Model Editor at design time. It cannot dynamically create a thirteenth branch when a new region launches. A model hardcoded to twelve regions breaks the day region thirteen ships, and nobody wants to edit a workflow model as part of adding a market.
+
+The stronger answer: one simple, single branch workflow model, and let the trigger create concurrency for you. If each region already has its own content (a live copy, a translated page, whatever your platform produces per region), an appropriately scoped Workflow Launcher can create a workflow instance for each regional page once that page produces a matching repository event. Be precise about this if pushed: the launcher does not understand “region” as a business concept, it reacts to events matching its configured path and node type. It only produces “one instance per region” because the content structure happens to give it one matching event per region, not because it has any awareness of regions itself. “Parallel” becomes many concurrent instances of one simple model, not one complex model with many branches. This scales to any number of regions without touching the model.
+
+Good follow up to expect: “how do you know when the whole campaign is done, if there is no parent instance to join on?” Answer: you track it separately, for example a tag on the source content that gets copied to each region, plus a small completion record written by the final step of each instance. It is not free, but it is simpler than the alternative and it does not couple your campaign visibility to a workflow model’s branch count.
+
+## Scenario 2: “Your workflow needs a human approver, but who approves depends on the content’s region. How do you avoid hardcoding this?”
+
+Model answer: a Dynamic Participant Step. Instead of the Participant Step naming a fixed user or group, it delegates the decision to a Participant Chooser, a small piece of code (implementing `ParticipantStepChooser`, or an ECMA script) that runs at the moment the step is reached and returns who should get the task. The chooser reads its answer from content, typically a config node under `/conf`, not from a hardcoded map in Java, so adding a region is a content change rather than a code deployment.
+
+Good follow up to expect: “what if the chooser cannot find a match?” A real implementation needs an explicit fallback (a default group), and should log clearly when it falls back, since a silent fallback to the wrong approver is a hard bug to notice.
+
+## Scenario 3: “Someone edits a page that already has an approval workflow in progress. What happens?”
+
+This question is designed to see whether you have actually thought about a launcher-driven design past the happy path, and it is where a lot of otherwise good answers fall apart.
+
+The trap: saying something like “the launcher starts a new workflow, and the old one just finishes normally,” without noticing that you now have two active instances competing to make a decision about the same page.
+
+The honest answer: by default, nothing stops this. A launcher fires on every matching content event, so a second edit while the first instance is still awaiting review starts a second, competing instance. This is a real risk in any launcher-driven design, not an edge case.
+
+What a defensible fix looks like, and what does not: checking “is another workflow already running for this payload” and terminating the new one if so sounds like a fix, but it is not, by itself. Listing running instances and then acting on what you found is not atomic. Two instances started close together can both run that check before either one terminates, and both can proceed anyway, a classic race condition. The property you actually need is an atomic idempotency or ownership mechanism: two concurrent workflow starts for the same content and version must not both be able to claim ownership. Don’t jump straight to naming one specific implementation (a JCR node lock, say) as the answer; the right mechanism depends on where your state already lives. Establish that the property you need is atomicity, then discuss options, a JCR node lock on the payload, or a compare and swap marker property where a `session.save()` conflict is the actual synchronization point, are both reasonable candidates worth naming once you’ve framed the requirement correctly.
+
+Why this question is worth asking yourself even outside an interview: it is very easy to write code that looks like it solved concurrency and did not, and ship it with confidence. If you cannot explain why “check then act” is not atomic, that is worth sitting with before you design anything relying on it.
+
+## Scenario 4: “Your workflow calls an external translation service. What could go wrong, and how do you design around it?”
+
+Model answer, structured around failure modes:
+
+- The call itself can fail. Fail loud: catch the exception, log the payload path and enough context to act on it without reproducing the failure, and let the workflow step genuinely fail rather than silently continuing with bad state.
+- The call can be slow or asynchronous. This is the one most candidates miss: if translation does not complete synchronously, a step that submits the job and immediately advances to human review is not actually waiting for translated content, it is racing ahead of it. The model needs either a polling step or a callback and webhook mechanism between submission and review.
+- Retrying the step should not cause duplicate work. If a step partially succeeds (it submitted the job, but the workflow then failed to advance) running it again should not resubmit and create a second job. This property is called idempotency, and it needs to be designed for deliberately.
+- An unbounded retry is its own failure mode. Any retry loop needs a bounded count, or a failing external vendor gets hammered indefinitely.
+- A retry count that runs out needs somewhere to go. Submit, then wait, then either success routes to review or a timeout routes to a bounded retry. Once retries are exhausted, route to manual intervention, notify someone, rather than letting the instance fail silently or retry forever. This full shape (submit, wait, timeout branch, bounded retry, exhausted-retry escalation) is what shows an interviewer you’re thinking operationally, not just handling the success path with a try/catch around it.
+
+Good follow up to expect: “would you build this orchestration yourself, or use something else?” A strong answer weighs whether AEM’s Translation Integration Framework, or the translation vendor’s own connector, should own the wait-for-completion logic instead of custom workflow code. Reaching straight for custom orchestration without asking that question is a minor red flag; it usually means more code to maintain for something a supported framework may already handle.
+
+## Scenario 5: “When would you make a workflow transient, and when would that be a mistake?”
+
+Model answer: transient workflows skip persisting most step by step runtime history, trading the audit trail for lower repository growth and somewhat faster processing. Good candidates are high volume, fully automated workflows where you do not need a record of every intermediate step, bulk asset ingestion is the textbook case.
+
+The trap to watch for in your own answer: claiming a workflow with a Participant Step can be made transient. It cannot, not meaningfully. The moment a workflow needs a human to act on a work item, AEM has to persist that state so the task can sit in an Inbox and survive until someone gets to it. If your workflow contains human review, as most approval flows do, transience mostly does not apply to it as a whole, though a purely automated sub process (for example a Container Step doing bulk metadata tagging with no human step) can still be a good transient candidate on its own.
+
+Second trap: be careful with Goto Steps inside a transient workflow. In documented AEM behavior, a Goto Step forces the engine to persist history to resume later, which defeats the purpose and can throw an error, but do not memorize that as an absolute rule to recite without qualification. Verify the exact restriction against the AEM version you are targeting before stating it as fact in an interview. What is safe to say without hedging: prefer an OR Split for routing and looping logic inside a transient model, since it doesn’t carry the same persistence question at all.
+
+## Scenario 6: “Your DAM Update Asset workflow customizations from AEM 6.5 do not work after migrating to AEM as a Cloud Service. Why?”
+
+Model answer: in Cloud Service, the default asset processing pipeline, renditions, metadata extraction, text extraction, runs as Asset Microservices outside AEM entirely, not as the old DAM Update Asset workflow. That does not mean custom `WorkflowProcess` implementations are unsupported in Cloud Service, they are a normal, supported extension point. What breaks specifically is any customization that depended on being embedded in, or triggered by, that legacy DAM Update Asset pipeline itself. That dependency has to be redesigned around the Cloud Service pattern: a post processing workflow, a normal workflow model that runs automatically after microservices finish, wired up either through a DAM folder’s auto start workflow setting, or a Custom Workflow Runner Service for more advanced routing. This is one of the most common places a lift and shift migration silently breaks, since the old workflow model can still exist in the repository without actually doing anything, and the custom code inside it simply never gets invoked anymore.
+
+Trap to avoid in your own phrasing: don’t say “custom workflow steps do not run anymore” as a blanket statement. If an interviewer asks “so are `WorkflowProcess` implementations unsupported in Cloud Service?” and your last sentence implied yes, you’ve undercut an otherwise correct answer. Be precise: the old pipeline is gone, the extension point itself is not.
+
+Good follow up to expect: “how would you find every place this bit a migration?” Search the project for custom `WorkflowProcess` implementations that assumed they were running inside DAM Update Asset, and check whether each one has an equivalent post processing model wired up in Cloud Service.
+
+## Scenario 7: “Walk me through what actually happens when a page is submitted for approval, end to end.”
+
+This is a basics question dressed up as a scenario, and it is worth being able to answer smoothly without notes, since fumbling it undercuts confidence in everything else you say.
+
+Model answer, the mechanical chain from Part 1: a Launcher detects the event and creates a Workflow Instance from a Workflow Model, attached to the page as the Payload. The engine executes the first Step. A Process Step runs automatically and moves on; a Participant Step generates a work item in someone’s Inbox and the instance pauses until they act on it. Branch points (OR Split, AND Split) route or parallelize execution. This repeats until the model reaches its End node, and the instance is archived.
+
+What separates a strong answer here from a memorized one: being able to say, without prompting, which of these steps would actually need to change if this were running at scale. The weak version of that answer is “none of the mechanics, just configure things more carefully.” The stronger version names what actually changes: triggering discipline (launcher scope and duplicate protection), persistence choices (transient versus not), concurrency and job queue pressure, external integration behavior (failure, timeout, retry), observability (the Failures view as a routine check, not a last resort), and workflow retention and purge scheduling. The mechanics of Start, Steps, and End stay identical at any scale. What scale actually changes is how aggressively you have to control triggering, persistence, concurrency, external calls, retries, and cleanup around those same mechanics, not the mechanics themselves.
+
+## Scenario 8: “Why trigger this with a launcher at all? Couldn’t the author just click a button?”
+
+This question tests something the rest of this post, and Part 4, mostly took for granted: that a launcher is the right trigger in the first place. It usually is not asked in isolation, it shows up as a challenge after you have already proposed a launcher based design.
+
+Model answer: a launcher is one of at least three legitimate ways to start a workflow, and picking the wrong one is a real design mistake, not just a style preference.
+
+- Event driven, via a launcher. A repository event (a node created, a property changed) triggers the workflow automatically. This fits when the business process should follow content changes without anyone having to remember to kick it off, bulk ingestion and the per region rollout in Part 4 are both genuinely event driven.
+- Explicit business action. An author clicks “Submit for Approval,” which calls a custom action or servlet that starts the workflow deliberately. This fits when starting the process is a distinct business decision, not just a side effect of saving. Approval flows are often a better fit here than people assume.
+- External or integration driven. An external system calls into AEM (an API, an event from another platform) and that triggers workflow start. This fits when the process genuinely originates outside AEM.
+
+The trap worth naming out loud: wiring an approval workflow to “page modified” is dangerous specifically because every save becomes a business event. An author fixing a typo, saving a draft, or AEM’s own internal processes touching the page can all fire the same launcher as a deliberate submission for approval would. That is a real source of the duplicate instance problem in Scenario 3, and in some designs it is arguably the wrong trigger entirely, not just a concurrency bug to patch afterward. If “submit for approval” is conceptually a distinct action an author takes, an explicit action trigger, a button that starts the workflow deliberately, is often the more correct design than inferring intent from a generic content modification event.
+
+## A closing note on how these questions are actually used
+
+None of these scenarios are really testing whether you remember a step type’s name. They are testing whether your first answer survives a follow up question. The strongest signal an interviewer gets is not the design you draw first, it is whether you can find the weak point in your own design before they have to point it out, the way this whole series ended up doing to its own Part 4 example across several rounds of review. That is a more honest description of how real AEM architecture work goes than any of these scenarios pretend to be on their own: the first draft is rarely the correct one, and being asked to defend it is the actual job.
+
+If you only take a handful of lines into an interview, take these instead of memorizing any of the prose above:
+
+1. Don’t model a fixed set of parallel branches (an AND Split) for something that is really a dynamically sized set of independent business units. Let independent events create independent instances instead.
+2. A launcher reacts to matching repository events. It has no concept of your business entities, “region” or otherwise, it just happens to produce the right event pattern when your content structure lines up with it.
+3. Human approval requires persisted workflow state. Transience is not available to a workflow containing a Participant Step, full stop.
+4. Check-then-act is not concurrency control. The property you need is atomic ownership or idempotency; the specific mechanism is a second question, answered after you’ve framed the requirement correctly.
+5. External integrations need failure handling, timeout handling, bounded retry, and idempotency, treated as a full design, not a try/catch bolted onto the happy path.
+6. A Cloud Service migration means redesigning extension points where the underlying platform architecture changed, not simply recompiling old code and hoping it still gets invoked.
+7. The trigger mechanism is a real design decision. Event driven, explicit action, and external integration are three different answers to “how does this start,” and defaulting to a launcher on every content change is not automatically correct just because it is the easiest to wire up.
+
+---
+
+References:
+
+- [Working with Workflows](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/authoring/workflows/overview)
+- [Developing and Extending Workflows](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows)
+- [Workflow Step Reference](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-step-ref)
+- [Workflow Best Practices, transient workflows and stages](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-best-practices)
+- [Configure and use asset microservices, including post processing workflows](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/manage/asset-microservices-configure-and-use)
+- [Multi Site Manager and Translation](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/administering/reusing-content/msm-and-translation)
