@@ -1,0 +1,407 @@
+---
+title: 'AEM as a Cloud Service Workflows, Part 4: A Large Scale Use Case'
+date: '2026-08-28'
+tags: ['AEM', 'AEM as a Cloud Service', 'Workflows', 'Multi Site Manager', 'Translation Workflow', 'Localization', 'Enterprise Architecture']
+draft: false
+summary: 'A complete, buildable AEM workflow: real model XML, custom process step and participant chooser Java code, launcher config, for a multi region content approval and translation flow.'
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+_Part 4 of 5 in a series on AEM Workflows. This post assumes you have read Parts 1 to 3. It walks through one realistic, heavily used workflow end to end, with the actual model definition and code, not just a description of one._
+
+Everything so far has been building blocks. This post puts them together into one scenario that shows up constantly in enterprise AEM projects: a global brand with dozens of country sites, all fed from one master site, all needing content review and translation before anything goes live. Then it gives you a real workflow model XML and Java as a reference implementation, so you can see what “large scale” means as an actual artifact, not just a diagram. Read the “Known gaps” note near the end before treating any of this as drop-in.
+
+## The scenario
+
+A global retail brand runs a master English site and twelve regional sites (French, German, Spanish, Japanese, and so on), all built with AEM Multi Site Manager (MSM) as live copies of the master. Every week, marketing pushes new campaign pages to the master site. Those pages need to flow out to all twelve regions, get translated, get reviewed by a local marketing approver in each region, and then get published, without a human manually tracking twelve approval chains by hand.
+
+This is a genuinely large scale case. A single campaign push can mean over a hundred pages once you multiply master pages by regions, and this happens every week, not once.
+
+## Getting the architecture right first
+
+Before any code, one correction to how people often picture this, because it changes what you actually build.
+
+It is tempting to draw this as one parent workflow that uses an AND Split to fan out into twelve branches, one per region, with a matching AND Join at the end. That is a clean picture, but it is not how AEM’s AND Split actually works, and it does not match this scenario.
+
+An AND Split’s branches are fixed at design time, inside the Workflow Model Editor. You cannot configure it to dynamically create “one branch per region” at runtime, and the number of regions on a real project changes over time as markets are added or dropped. A model hardcoded to twelve branches breaks the day region thirteen launches.
+
+Here is what actually happens, and it is simpler than the AND Split picture:
+
+MSM already creates a separate physical page for each region when it rolls out a Live Copy. Once a regional Live Copy receives that content change, a Workflow Launcher scoped to `/content/mysite/*` can operate on each regional page independently, without needing to fan anything out itself. This is a weaker, more defensible claim than saying MSM guarantees exactly one workflow execution per region: rollout configuration, triggers, and synchronization timing on a real project can all affect exactly when and how often that content change arrives, so treat “launcher fires per region” as what the launcher does once it sees the change, not as an unconditional guarantee from MSM itself. Twelve regions running “in parallel” simply means twelve concurrent instances of the exact same, single branch workflow model, one per region, each with its own payload.
+
+This is a better design, not a compromise. The model itself stays simple (one straight line with one decision point), it scales to any number of regions without touching the model, and there is no parent workflow instance to design, monitor, or debug.
+
+The one thing you do lose by not having an AND Join: there is no single instance that represents “the whole campaign.” Campaign level visibility, “are all twelve regions live yet,” has to be built separately. The last section of this post covers exactly how.
+
+## The complete model, step by step
+
+Here is what this model actually looks like on the canvas in the Workflow Model Editor, matching the XML further down exactly, node for node.
+
+![Regional Campaign Approval workflow model as it appears in the AEM Workflow Model Editor: Start, Submit for Translation, Regional Review, an OR Split routing to either Publish Region Page (approved) or Notify Author (rejected, default), converging to End](https://stackedit.io/aem-workflows-part4-model-editor-view.svg)
+
+Here is the full step by step design for the one model that runs per region, per page.
+
+1. Start
+2. Process Step, “Submit for Translation”: sends the page’s content to the translation provider and writes the translation job ID onto the payload’s metadata. Runs automatically, no human involved.
+3. Participant Step (Dynamic, with a review dialog), “Regional Review”: assigned at runtime to that region’s marketing approver by a custom Participant Chooser (so the model itself never hardcodes an approver). The approver’s dialog includes an approve/reject choice and a rejection reason field.
+4. OR Split: reads the decision the approver made in step 3 and routes to either publish or rejection handling. No Goto step anywhere in this model, both branches lead to their own End rather than looping back automatically, which keeps the model simple to reason about (see the note on why, further down).
+5. Process Step, “Publish Region Page”: activates the page for that region. Runs automatically.
+6. Process Step, “Notify Author of Rejection”: on the rejected path, notifies the original author with the rejection reason. Runs automatically.
+7. End (reached from either the publish step or the notify step)
+
+Why no retry loop back to review: if a page is rejected and the author fixes it, saving that fix is itself a new content change under the region’s path, which the launcher picks up and starts a brand new instance for. Looping the same instance back to review would mean holding it open indefinitely and duplicating logic the launcher already gives you for free. Ending the instance and letting the launcher restart it on the next save is simpler and matches how the trigger already works.
+
+## The workflow model, as a reference implementation
+
+This is what the real content structure looks like, the kind you would put in your project’s `ui.apps` under `/apps/mysite/workflow/models/` or `/conf/global/settings/workflow/models/` in a Maven project. Treat this as a correct starting shape to build from and test, not a package to copy and deploy unmodified. Adobe’s exact model serialization details can vary by version, so verify this against the AEM version you actually target before shipping it.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+    xmlns:cq="http://www.day.com/jcr/cq/1.0"
+    xmlns:jcr="http://www.jcp.org/jcr/1.0"
+    xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="cq:WorkflowModel"
+    sling:resourceType="cq/workflow/components/model"
+    title="Regional Campaign Approval"
+    description="Translate, review, and publish one region's copy of a campaign page">
+
+    <metaData jcr:primaryType="nt:unstructured"/>
+
+    <nodes jcr:primaryType="nt:unstructured">
+
+        <node0 jcr:primaryType="cq:WorkflowNode" title="Start" type="START">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node0>
+
+        <node1 jcr:primaryType="cq:WorkflowNode" title="Submit for Translation" type="PROCESS">
+            <metaData jcr:primaryType="nt:unstructured"
+                PROCESS="com.mysite.core.workflow.TranslationSubmitProcess"
+                PROCESS_AUTO_ADVANCE="{Boolean}true"/>
+        </node1>
+
+        <node2 jcr:primaryType="cq:WorkflowNode" title="Regional Review" type="PARTICIPANT">
+            <metaData jcr:primaryType="nt:unstructured"
+                PARTICIPANT_CHOOSER="com.mysite.core.workflow.RegionApproverChooser"
+                CHOOSER_INITIAL="{Boolean}false"
+                TIMEOUT_ACTION="ESCALATE"
+                TIMEOUT_TIME="{Long}86400000"/>
+        </node2>
+
+        <node3 jcr:primaryType="cq:WorkflowNode" title="Approved or Rejected" type="OR_SPLIT">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node3>
+
+        <node4 jcr:primaryType="cq:WorkflowNode" title="Publish Region Page" type="PROCESS">
+            <metaData jcr:primaryType="nt:unstructured"
+                PROCESS="com.mysite.core.workflow.PublishRegionProcess"
+                PROCESS_AUTO_ADVANCE="{Boolean}true"/>
+        </node4>
+
+        <node5 jcr:primaryType="cq:WorkflowNode" title="Notify Author of Rejection" type="PROCESS">
+            <metaData jcr:primaryType="nt:unstructured"
+                PROCESS="com.mysite.core.workflow.NotifyRejectionProcess"
+                PROCESS_AUTO_ADVANCE="{Boolean}true"/>
+        </node5>
+
+        <node6 jcr:primaryType="cq:WorkflowNode" title="End" type="END">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node6>
+
+    </nodes>
+
+    <transitions jcr:primaryType="nt:unstructured">
+
+        <node0_x0023_node1 jcr:primaryType="cq:WorkflowTransition" from="node0" to="node1">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node0_x0023_node1>
+
+        <node1_x0023_node2 jcr:primaryType="cq:WorkflowTransition" from="node1" to="node2">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node1_x0023_node2>
+
+        <node2_x0023_node3 jcr:primaryType="cq:WorkflowTransition" from="node2" to="node3">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node2_x0023_node3>
+
+        <node3_x0023_node4 jcr:primaryType="cq:WorkflowTransition" from="node3" to="node4"
+            rule="function check() { return workItem.getWorkflowData().getMetaDataMap().get('approvalStatus','') == 'approved'; }">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node3_x0023_node4>
+
+        <node3_x0023_node5 jcr:primaryType="cq:WorkflowTransition" from="node3" to="node5" default="{Boolean}true">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node3_x0023_node5>
+
+        <node4_x0023_node6 jcr:primaryType="cq:WorkflowTransition" from="node4" to="node6">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node4_x0023_node6>
+
+        <node5_x0023_node6 jcr:primaryType="cq:WorkflowTransition" from="node5" to="node6">
+            <metaData jcr:primaryType="nt:unstructured"/>
+        </node5_x0023_node6>
+
+    </transitions>
+
+</jcr:root>
+```
+
+A couple of things worth calling out in that XML, since they trip people up:
+
+- `PROCESS` on a PROCESS node points at the fully qualified class name (or `process.label` for OSGi lookup) of your custom `WorkflowProcess` implementation, shown below.
+- `PARTICIPANT_CHOOSER` on the PARTICIPANT node is what turns a plain Participant Step into a Dynamic Participant Step. Without it, AEM expects a hardcoded `PARTICIPANT` property naming a fixed user or group.
+- The OR Split’s two outgoing transitions are evaluated in order. The `rule` on the first is a routing script; the second is marked `default="true"`, meaning it is taken if no rule based transition matches, which is what makes rejection the fallback path.
+- This model, as written, is not transient. It contains a Participant Step, and as covered in Part 3, that forces AEM to persist state so the task can sit in someone’s Inbox correctly. Do not try to mark this particular model transient.
+
+## The Java behind it
+
+### Submitting the page for translation
+
+```java
+package com.mysite.core.workflow;
+
+import com.adobe.granite.workflow.WorkflowException;
+import com.adobe.granite.workflow.WorkflowSession;
+import com.adobe.granite.workflow.exec.WorkItem;
+import com.adobe.granite.workflow.exec.Workflow;
+import com.adobe.granite.workflow.exec.WorkflowProcess;
+import com.adobe.granite.workflow.metadata.MetaDataMap;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+import java.util.List;
+
+@Component(service = WorkflowProcess.class, property = {
+    "process.label=Submit for Translation"
+})
+public class TranslationSubmitProcess implements WorkflowProcess {
+
+    @Reference
+    private TranslationClient translationClient;
+
+    @Override
+    public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap metaDataMap)
+            throws WorkflowException {
+
+        String payloadPath = workItem.getWorkflowData().getPayload().toString();
+        String thisInstanceId = workItem.getWorkflow().getId();
+
+        // KNOWN UNSOLVED PROBLEM: this check-then-terminate has a race
+        // condition. Two instances started close together can both run
+        // this check before either terminates, and both can proceed.
+        // Enumerating running workflows is not atomic. A real fix
+        // needs atomic state (a JCR node lock, or a compare-and-swap
+        // marker property where a session.save() conflict is the
+        // synchronization point), not deliberately left unimplemented
+        // here rather than shipped as another unverified fix.
+        List<Workflow> running = wfSession.getWorkflowsForPayload(payloadPath);
+        for (Workflow other : running) {
+            boolean isRunning = "RUNNING".equals(other.getState());
+            boolean isDifferentInstance = !other.getId().equals(thisInstanceId);
+            if (isRunning && isDifferentInstance) {
+                wfSession.terminateWorkflow(workItem.getWorkflow());
+                return;
+            }
+        }
+
+        // Kick off the translation job with the external provider.
+        // TranslationClient wraps the actual REST call; keep that logic
+        // out of the workflow process itself so it stays testable.
+        String jobId = translationClient.submit(payloadPath);
+
+        // A single translationJobId key is a placeholder. A real
+        // integration needs explicit lifecycle state, not one ad hoc
+        // key: translationJobId, translationStatus,
+        // translationSubmittedAt, translationCompletedAt at minimum,
+        // with a clear owner for each field.
+        workItem.getWorkflowData().getMetaDataMap().put("translationJobId", jobId);
+    }
+}
+```
+
+Two things worth being direct about here, not glossing over:
+
+This step is submission-only, and that is a real gap, not a minor footnote. Submitting a job and immediately advancing to review is a translation-job-submission workflow, not a complete translation workflow. A production implementation needs an additional step, or a callback/webhook handler, that actually waits for the translated content to come back before Regional Review runs. That mechanism is vendor specific, so it is left out here rather than guessed at, but do not read its absence as “optional.” It also needs proper error handling around the external call (per Part 3’s advice: fail loud, log the payload path and job details, and make sure this step is safe to run again if the workflow retries it). Before building this as custom orchestration at all, consider whether AEM’s Translation Integration Framework, or your translation connector’s own lifecycle handling, should own the wait-for-completion logic instead. Hand-rolling translation orchestration inside a workflow is real extra complexity that a supported framework may already solve.
+
+The duplicate instance check above does not actually solve concurrency, and should not be read as a fix. It is a partial mitigation with a documented race condition: enumerating running workflow instances and then terminating one is not an atomic operation, so two instances started close together can both pass the check before either one terminates. A production-grade solution needs atomic state, such as a JCR node lock on the payload or a compare-and-swap marker property where a `session.save()` conflict is the actual synchronization mechanism. That is deliberately not implemented here rather than shipped as a second unverified fix layered on the first mistake.
+
+### Choosing the approver dynamically
+
+```java
+package com.mysite.core.workflow;
+
+import com.adobe.granite.workflow.WorkflowSession;
+import com.adobe.granite.workflow.exec.ParticipantStepChooser;
+import com.adobe.granite.workflow.exec.WorkItem;
+import com.adobe.granite.workflow.metadata.MetaDataMap;
+import com.day.cq.wcm.api.Page;
+import com.day.cq.wcm.api.PageManager;
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.osgi.service.component.annotations.Component;
+
+import java.util.Locale;
+
+@Component(service = ParticipantStepChooser.class, property = {
+    "chooser.label=Region Approver Chooser"
+})
+public class RegionApproverChooser implements ParticipantStepChooser {
+
+    private static final String APPROVER_CONFIG_PATH = "/conf/mysite/settings/approvers";
+    private static final String FALLBACK_GROUP = "marketing-approvers-default";
+
+    @Override
+    public String getParticipant(WorkItem workItem, WorkflowSession wfSession, MetaDataMap args) {
+        String payloadPath = workItem.getWorkflowData().getPayload().toString();
+        ResourceResolver resolver = wfSession.adaptTo(ResourceResolver.class);
+        if (resolver == null) {
+            return FALLBACK_GROUP;
+        }
+
+        String locale = resolveLocale(resolver, payloadPath);
+
+        // Reads the mapping from a config node so a new region is a
+        // content change, not a code change.
+        Resource configResource = resolver.getResource(APPROVER_CONFIG_PATH + "/" + locale);
+        if (configResource != null) {
+            String group = configResource.getValueMap().get("approverGroup", String.class);
+            if (group != null) {
+                return group;
+            }
+        }
+        return FALLBACK_GROUP;
+    }
+
+    private String resolveLocale(ResourceResolver resolver, String payloadPath) {
+        // Reads the page's own jcr:language property via PageManager,
+        // rather than assuming a fixed locale segment position in the
+        // path. Parsing a fixed index (payloadPath.split("/")[3]) is
+        // fragile: it breaks silently the moment the content structure
+        // changes, with no error, just a wrong or missing approver.
+        PageManager pageManager = resolver.adaptTo(PageManager.class);
+        if (pageManager != null) {
+            Page page = pageManager.getPage(payloadPath);
+            if (page != null) {
+                Locale language = page.getLanguage(false);
+                if (language != null) {
+                    return language.toString();
+                }
+            }
+        }
+        return "default";
+    }
+}
+```
+
+An earlier draft of this class extracted the locale with `payloadPath.split("/")[3]`, assuming the shape `/content/mysite/{locale}/...` forever. That is exactly the kind of coupling that breaks quietly: change the content structure once, on an unrelated project decision, and this chooser starts assigning the wrong approver with no error anywhere. Reading the page’s actual language property through `PageManager` is the same information without hardcoding a path position.
+
+### Publishing on approval
+
+```java
+package com.mysite.core.workflow;
+
+import com.adobe.granite.workflow.WorkflowException;
+import com.adobe.granite.workflow.exec.WorkItem;
+import com.adobe.granite.workflow.exec.WorkflowProcess;
+import com.adobe.granite.workflow.metadata.MetaDataMap;
+import com.adobe.granite.workflow.WorkflowSession;
+import com.day.cq.replication.ReplicationActionType;
+import com.day.cq.replication.Replicator;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+@Component(service = WorkflowProcess.class, property = {
+    "process.label=Publish Region Page"
+})
+public class PublishRegionProcess implements WorkflowProcess {
+
+    @Reference
+    private Replicator replicator;
+
+    @Override
+    public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap metaDataMap)
+            throws WorkflowException {
+
+        String payloadPath = workItem.getWorkflowData().getPayload().toString();
+
+        try {
+            ResourceResolver resolver = wfSession.adaptTo(ResourceResolver.class);
+            replicator.replicate(resolver.adaptTo(javax.jcr.Session.class),
+                    ReplicationActionType.ACTIVATE, payloadPath);
+        } catch (Exception e) {
+            // Fail loud, per Part 3: this needs to surface in the
+            // Workflow Console's Failures view with enough context
+            // to act on, not disappear silently.
+            throw new WorkflowException("Failed to publish " + payloadPath, e);
+        }
+    }
+}
+```
+
+## The launcher
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+    xmlns:jcr="http://www.jcp.org/jcr/1.0"
+    jcr:primaryType="nt:unstructured"
+    condition="cq:Page"
+    description="Starts regional review whenever a rolled out campaign page is created or modified"
+    enabled="{Boolean}true"
+    event="{Long}17"
+    glob="/content/mysite/*/campaigns/*"
+    excludeList="[/content/mysite/en/campaigns/*]"
+    workflow="/var/workflow/models/regional-campaign-approval"/>
+```
+
+A couple of details worth being precise about, including a correction:
+
+- `glob` is scoped specifically to `campaigns` pages under any region, not the master (`/content/mysite/en`) and not the whole site tree. `excludeList` backs that up explicitly, so the master locale is excluded even if the glob pattern is ever loosened. Getting this pattern wrong is the single most common way teams end up either missing pages or accidentally starting the workflow on unrelated content.
+- `event` is a bitmask from the JCR `Event` interface (`NODE_ADDED=1`, `NODE_REMOVED=2`, `PROPERTY_ADDED=4`, `PROPERTY_REMOVED=8`, `PROPERTY_CHANGED=16`, `NODE_MOVED=32`). The value here, `17`, is `NODE_ADDED + PROPERTY_CHANGED`. An earlier draft of this post used `2`, which is `NODE_REMOVED` only, meaning it would have fired on page deletion, not creation or modification, the opposite of what it needs to do. `17` is correct arithmetic against those constants, but that is a narrower claim than “covers everything this workflow needs to react to.” Real authoring and MSM rollout behavior can involve other event types (child node operations, versioning), so validate against actual behavior in your environment rather than trusting the bitmask math alone.
+- This launcher has a partial, known-incomplete mitigation against duplicate instances, not a solution. If the same page is edited again while an earlier instance is still awaiting review, the launcher fires again and starts a second, competing instance for the same payload. The `TranslationSubmitProcess` step further down includes a check that reduces this risk but has a real race condition: two instances started close together can both run the check before either terminates, and both can proceed. That is covered honestly, not glossed over, in that step’s section below.
+- This launcher is deployed and reviewed through your CI/CD pipeline like any other configuration, per the Cloud Service limits covered in Part 2. Nobody hand edits this on a running environment.
+
+## Campaign level visibility, without an AND Join
+
+Since there is no longer a single parent instance representing the whole campaign, “are all twelve regions live yet” needs its own small piece of tracking, separate from the workflow model itself.
+
+The simplest version that actually works at this scale: when the master campaign page is created, tag it with a `campaignId` property (for example `campaign-2026-08-w4`). MSM’s rollout copies that property onto every regional Live Copy automatically, since it is standard page content. The `PublishRegionProcess` step above, right after a successful `replicate` call, needs to write a small completion record somewhere.
+
+Where exactly is an open decision, not a settled one. An earlier draft of this post put that record under `/var/mysite/campaigns/<campaignId>/<locale>` as if that were obviously correct; it is not. `/var` is normally where AEM keeps its own runtime and system state, not application level business tracking, so defaulting to it without a specific reason is worth reconsidering. A dedicated audit or reporting store, or pushing the completion event to an external system your dashboard already reads from, are both reasonable alternatives. Pick this deliberately for your project rather than copying a path from a blog post.
+
+A lightweight dashboard, or even a scheduled report using AEM’s Query Builder against that `/var` path, can then answer “how many of the twelve regions for this campaign have published” without needing a workflow instance to hold that state at all. This keeps the workflow model itself simple and reusable, while still giving marketing the single “is the campaign fully live” answer they actually want.
+
+## Known gaps in this reference implementation
+
+Worth listing plainly rather than burying in footnotes, since presenting any of this as finished would be dishonest:
+
+1. Translation is submission-only. No step waits for translated content to actually come back before review starts. Needs a polling or callback step, vendor specific, not included here. Consider whether AEM’s Translation Integration Framework, or your translation connector’s own lifecycle handling, should own this rather than custom orchestration built into the workflow.
+2. The duplicate instance check does not solve concurrency. It is a partial mitigation with a real, documented race condition, not a fix. A production solution needs atomic state (a JCR node lock or a compare-and-swap marker property), not application-level enumeration.
+3. Workflow metadata is a placeholder, not a designed integration state model. A single `translationJobId` key needs to become explicit lifecycle fields (status, submitted-at, completed-at) with a clear owner once retries and async callbacks are involved.
+4. Campaign completion tracking location is undecided, as covered above. Do not default to `/var` without a reason.
+5. The launcher’s event bitmask (`17`) is arithmetically correct against the JCR `Event` constants, not behaviorally validated against everything real authoring or MSM rollout might trigger. Verify against actual behavior in your environment, not just the bitmask math.
+6. MSM’s guarantee is weaker than “one workflow execution per region.” This design relies on the launcher operating independently once a regional Live Copy receives a content change, not on an unconditional guarantee from MSM about exactly how and when that happens.
+7. This has not been deployed and run against a real AEM environment. Everything here is structurally correct XML and Java, checked against documentation and the JCR spec, but “checked against documentation” and “verified against a running system” are not the same claim, and this post only makes the first one.
+
+The companion downloadable package for this post has the same gaps listed in its README, along with the actual corrected files.
+
+## What changed from a first pass at this design
+
+If you have seen a version of this pattern described with a parent workflow and an AND Split, and you are wondering why this post does not build it that way, the short answer is: it looks correct on a whiteboard, but it does not hold up as a real, deployable model, for the reasons above (fixed branch count, no natural way to represent “region thirteen” without a code change). The version in this post trades a single, satisfying “one big workflow” picture for something that is boring, per-region, and does not need to change when the business adds a market. That trade is almost always the right one in production AEM architecture.
+
+## What’s next
+
+Part 5 wraps up the series with interview scenarios: the kinds of workflow questions that actually come up in AEM architect interviews, including ones that probe exactly this kind of “looks right but does not scale” design mistake.
+
+---
+
+References:
+
+- [Multi Site Manager and Translation](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/administering/reusing-content/msm-and-translation)
+- [Interacting with Workflows Programmatically, model JSON and node structure](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-program-interaction)
+- [Developing and Extending Workflows](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows)
+- [Workflow Step Reference](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-step-ref)
+- [Workflow Best Practices, stages and transient workflows](https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/developing/extending-aem/extending-workflows/workflows-best-practices)
