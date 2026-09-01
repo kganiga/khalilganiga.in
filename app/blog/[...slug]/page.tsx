@@ -49,7 +49,12 @@ export async function generateMetadata(props: {
     }
   })
 
-  const canonicalUrl = `${siteMetadata.siteUrl}/${post.path}`
+  const canonicalUrl =
+    post.canonicalUrl && post.canonicalUrl.trim()
+      ? post.canonicalUrl.startsWith('http')
+        ? post.canonicalUrl
+        : `${siteMetadata.siteUrl}/${post.canonicalUrl.replace(/^\//, '')}`
+      : `${siteMetadata.siteUrl}/${post.path}`
 
   return {
     title: post.title,

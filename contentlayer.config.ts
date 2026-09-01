@@ -120,18 +120,24 @@ export const Blog = defineDocumentType(() => ({
     ...computedFields,
     structuredData: {
       type: 'json',
-      resolve: (doc) => ({
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: doc.title,
-        datePublished: doc.date,
-        dateModified: doc.lastmod || doc.date,
-        description: doc.summary,
-        image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
-        url: `${siteMetadata.siteUrl}/${formatSlug(
-          doc._raw.flattenedPath.replace(/^.+?(\/)/, '')
-        )}`,
-      }),
+      resolve: (doc) => {
+        const canonical =
+          doc.canonicalUrl && doc.canonicalUrl.trim()
+            ? doc.canonicalUrl.startsWith('http')
+              ? doc.canonicalUrl
+              : `${siteMetadata.siteUrl}/${doc.canonicalUrl.replace(/^\//, '')}`
+            : `${siteMetadata.siteUrl}/${formatSlug(doc._raw.flattenedPath)}`
+        return {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: doc.title,
+          datePublished: doc.date,
+          dateModified: doc.lastmod || doc.date,
+          description: doc.summary,
+          image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
+          url: canonical,
+        }
+      },
     },
   },
 }))
@@ -158,18 +164,24 @@ export const Story = defineDocumentType(() => ({
     ...computedFields,
     structuredData: {
       type: 'json',
-      resolve: (doc) => ({
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: doc.title,
-        datePublished: doc.date,
-        dateModified: doc.lastmod || doc.date,
-        description: doc.summary,
-        image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
-        url: `${siteMetadata.siteUrl}/${formatSlug(
-          doc._raw.flattenedPath.replace(/^.+?(\/)/, '')
-        )}`,
-      }),
+      resolve: (doc) => {
+        const canonical =
+          doc.canonicalUrl && doc.canonicalUrl.trim()
+            ? doc.canonicalUrl.startsWith('http')
+              ? doc.canonicalUrl
+              : `${siteMetadata.siteUrl}/${doc.canonicalUrl.replace(/^\//, '')}`
+            : `${siteMetadata.siteUrl}/${formatSlug(doc._raw.flattenedPath)}`
+        return {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: doc.title,
+          datePublished: doc.date,
+          dateModified: doc.lastmod || doc.date,
+          description: doc.summary,
+          image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
+          url: canonical,
+        }
+      },
     },
   },
 }))
