@@ -17,6 +17,10 @@ export async function generateMetadata(props: {
     title: tag,
     description: `${siteMetadata.title} ${tag} tagged content`,
     canonicalUrl: `tags/${tag}`,
+    robots: {
+      index: false,
+      follow: true,
+    },
     alternates: {
       types: {
         'application/rss+xml': `${siteMetadata.siteUrl}/tags/${tag}/feed.xml`,

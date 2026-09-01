@@ -1,106 +1,158 @@
 ---
-title: Why Attackers Prefer Path Based Servlets in AEM
+title: 'Why Attackers Target Path-Based Servlets in AEM (And What to Do Instead)'
 date: '2025-10-07'
-tags: ['AEM', 'Tech Information', 'How To', 'Tutorials', 'Best Practices']
+lastmod: '2026-09-01'
+tags: ['AEM', 'Security', 'Best Practices', 'Tutorials']
 draft: false
-summary: Path based servlets in AEM are a security risk. Resource-type servlets enforce permissions and keep your app safe.
+summary: 'Why path-based servlets are one of the biggest security risks in Adobe Experience Manager, how attackers discover and exploit them, and how to build secure resource-type servlets.'
 images: []
 layout: PostLayout
 isfeatured: false
 ---
 
-As developers, we know that registering servlets using `sling.servlet.resourceTypes` is the standard and recommended way in AEM. But have you ever stopped to consider why the alternative, `sling.servlet.paths`, is so strongly discouraged? Beyond just being a best practice, understanding _why_ one so much better reveals critical security lessons.
+If you have done code reviews on an AEM project, you have almost certainly seen servlets registered like this:
 
-Let's start by looking at the benefits of path-based servlets, then explore why those benefits are far outweighed by the risks from a security and attacker perspective.
+```java
+@Component(
+    service = Servlet.class,
+    property = {
+        "sling.servlet.paths=/bin/myproject/userdata",
+        "sling.servlet.methods=GET"
+    }
+)
+public class UserDataServlet extends SlingSafeMethodsServlet {
+    // ...
+}
+```
 
-**The Benefits of Path Based Servlets**
+It is easy to understand why developers write them. It feels straightforward: you need an endpoint for an AJAX call, you pick a path like `/bin/myproject/userdata`, and you are done in two minutes.
 
-Path based servlets seem simple and easy to use.
+Adobe’s documentation and SonarQube rules explicitly warn against using `sling.servlet.paths`. But why is this pattern considered such a massive security risk in real-world deployments?
 
-**Simple Setup:** A path-based servlet can be set up with a single, easy-to-remember path, like `/bin/myservlet`. This can feel quicker for one-off tasks.
+Let's look at what actually happens under the hood when you register a path-based servlet, how attackers target them, and the proper architectural pattern to replace them.
 
-**Explicit Control:** Developers have total control over the URL. They know exactly where the servlet can be accessed, which can make debugging seem more straightforward.
+---
 
-**Global Access:** It can be used for site-wide or global utilities that don't depend on a specific content component.
+## 1. How Path-Based Servlets Break the AEM Security Model
 
-But this simplicity comes at a high price, one that attacker is all too happy to collect.
+AEM's entire security architecture is built on top of **Sling Resource Resolution** and **JCR Access Control Lists (ACLs)**.
 
-**The Attacker's Perspective:**
+When a user requests a normal page or component:
+1. Sling resolves the URL to a specific JCR node in the repository (e.g., `/content/my-site/us/en/jcr:content/root/hero`).
+2. The JCR security layer checks whether the requesting user (or `anonymous`) has `jcr:read` permissions on that node.
+3. If permissions fail, the request is rejected with a `404` or `403` before any component script or servlet code executes.
 
-From a attacker's point of view, a path-based servlet isn't just a convenient endpoint—it's a known, predictable entry point that exists outside AEM's built-in security. They provide a direct path to your code, bypassing the platform's core defenses.
+### The Problem with `sling.servlet.paths`:
+Path-based servlets exist outside the JCR content tree. When a request hits `/bin/myproject/userdata`:
+- There is no JCR node at that path.
+- Sling resolves the request directly to the Java OSGi service in memory.
+- **No JCR ACL checks are evaluated.**
 
-1. Bypassing JCR ACLs:
+Unless the developer manually writes explicit session checks, token verification, and permission logic inside the Java code, the endpoint is completely open to anyone who hits it.
 
-AEM's built-in security relies on JCR Access Control Lists (ACLs), which define who can access specific content. When a request comes in for a content page, Sling checks the ACLs to see if the user has permission.
+---
 
-Path based servlets, however, bypass this entire process. The request goes directly to the servlet code, leaving the servlet itself responsible for all security. If a developer forgets a single permission check, the gate is wide open.
+## 2. The Attacker's Playbook: Automated Reconnaissance
 
-**Example**: A data leak
+Attackers attacking AEM instances do not guess randomly. They use automated directory fuzzers (like `ffuf`, `gobuster`, or `nuclei`) loaded with wordlists tailored specifically for AEM and Sling.
 
-Consider a path-based servlet at `/bin/mysite/email-list` that returns a JSON list of customer emails.
+Common path prefixes like `/bin/`, `/services/`, `/apps/`, and `/var/` are the first things targeted:
 
-The developer assumes, "This is only for an internal tool, so it doesn't need much security."
+```text
+https://example.com/bin/query
+https://example.com/bin/myproject/export
+https://example.com/bin/user-info
+https://example.com/bin/newsletter/subscribers
+```
 
-Attacker uses an automated tool to scan a site for common servlet paths.
+If a developer wrote a path-based servlet for an internal dashboard or quick export tool and forgot to enforce authentication, an external attacker will discover it within minutes of scanning.
 
-The hacker finds `/bin/mysite/email-list` and sends a request.
+Worse, if that servlet uses a `ServiceResourceResolver` to read data from the repository, the attacker effectively gets root-level access to private repository nodes.
 
-Because there's no JCR ACL protecting the path and the servlet lacks a manual security check, the hacker obtains a list of customers' emails.
+---
 
-2. Manual configuration headaches
+## 3. The Dispatcher Filter Dilemma
 
-Beyond writing the Java code, a developer using path based servlets must perform manual configuration steps on AEM and the Dispatcher. These steps are easy to forget and provide more chances for error.
+To make a path-based servlet accessible to frontend users, developers have to open the path in the Dispatcher configuration (`filters.any`):
 
-**Dispatcher Filters:** The servlet's path must be manually added to the Dispatcher's filter rules to allow the request to pass through. Most secure Dispatcher setups use an "allowlist" approach, where all paths are denied by default. Without adding an explicit filter for your servlet's path, all requests will be blocked.
+```apache
+# Anti-pattern: Opening up /bin paths in Dispatcher
+/0100 { /type "allow" /method "GET" /url "/bin/myproject/*" }
+```
 
-**OSGi Configuration:** Some AEM features, such as the `Apache Sling Servlet/Script Resolver and Error Handler`, need to be configured via OSGi to allow custom paths to be resolved. Opening up these paths makes the system more vulnerable.
+Using wildcards like `/bin/myproject/*` in Dispatcher filters is dangerous. If someone later adds a new path-based servlet under `/bin/myproject/admin-tools` intended only for internal testing, the Dispatcher rule inadvertently exposes it to the public internet.
 
-3. Discovery through brute-force:
+---
 
-Path based servlets often follow common patterns, such as being placed under /bin, /services, or /api. Attackers are aware of this and use automated "fuzzing" tools to test numerous path combinations, looking for unprotected endpoints. They don't need to be authenticated users or understand your codebase to find these weak spots.
+## 4. The Clean Solution: Resource-Type Servlets
 
-**Example:** A hacker knows that AEM sites frequently have servlets in the /bin folder. They run a script that tries different paths:
+Instead of binding a servlet to an arbitrary URL string, bind it to a **Resource Type**, **Selector**, and **Extension**:
 
-yoursite.com/bin/search
+```java
+package com.myproject.core.servlets;
 
-yoursite.com/bin/query
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
+import org.osgi.service.component.annotations.Component;
+import javax.servlet.Servlet;
+import java.io.IOException;
 
-yoursite.com/bin/admin-tools
+@Component(
+    service = Servlet.class,
+    property = {
+        "sling.servlet.resourceTypes=myproject/components/userprofile",
+        "sling.servlet.selectors=data",
+        "sling.servlet.extensions=json",
+        "sling.servlet.methods=GET"
+    }
+)
+public class UserProfileDataServlet extends SlingSafeMethodsServlet {
 
-yoursite.com/bin/internal-data
+    @Override
+    protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) 
+            throws IOException {
+        
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        // request.getResource() points to the actual JCR resource
+        // JCR permissions were ALREADY verified before reaching this line
+        response.getWriter().write("{\"status\":\"ok\"}");
+    }
+}
+```
 
-If one of these endpoints exists and is unprotected, the attacker has successfully gained access.
+### Why This Is Far More Secure:
+1. **Inherited Repository ACLs:** If the user cannot access the page or resource `/content/my-site/us/en/profile/jcr:content/userprofile`, Sling returns a `404/403` immediately. The Java servlet code is never executed.
+2. **Standard Dispatcher Rules:** You don't need to open `/bin/` in your Dispatcher. Standard content paths (`/content/my-site/*`) with `.json` extensions and `.data` selectors are already handled cleanly by your standard content filters.
+3. **No URL Guessing:** Attackers scanning `/bin/` will find nothing.
 
-**The Secure Alternative:**
+---
 
-This method links your servlet directly to an existing AEM component or resource type, not a hardcoded path.
+## What If You Need a Global Utility Servlet?
 
-**How it Works Securely:**
+If you truly need a global endpoint that isn't tied to a specific page component (for example, a site-wide search or contact form submission):
 
-- **Automatic ACL Enforcement:** The Sling engine checks JCR ACLs on the resource before running the servlet. If the user doesn't have read access to the resource, the servlet never runs.
+1. **Option A (Recommended):** Bind the servlet to `sling/servlet/default` with a strict, unique selector:
+   ```java
+   property = {
+       "sling.servlet.resourceTypes=sling/servlet/default",
+       "sling.servlet.selectors=site-search",
+       "sling.servlet.extensions=json",
+       "sling.servlet.methods=GET"
+   }
+   ```
+   Users invoke it against an existing content path: `/content/my-site/us/en.site-search.json`.
 
-- **Content-Based Access:** An attacker can't simply guess a URL. They would need to know the path to a valid resource and have permission to access it.
+2. **Option B:** Create a dedicated node under `/content/services/my-service` with appropriate permissions, and bind the servlet to that resource type.
 
-- **Contextual Logic:** The servlet operates within the context of a specific resource, making its purpose clear and its security model easy to understand.
+---
 
-**Bonus security tip**: Validate and sanitize all inputs/request params.
+## Summary Checklist
 
-Regardless of whether you use a path or a resource type, you should always validate and sanitize request parameters to prevent common attacks like Cross-Site Scripting (XSS) and command injection. Never trust user input, even from an internal-only servlet.
-
-**Example**: Always use AEM's built-in XSSAPI to protect against malicious user input.
-
-    String userInput = request.getParameter("userInput");
-
-    _// Instead of using userInput directly, sanitize it first_
-
-    String sanitizedInput = xssApi.getValidHtml(userInput);
-
-    _// ... use the sanitizedInput safely_
-
-Use code with caution.
-
-**Conclusion**
-
-Path-based servlets, despite their apparent simplicity, create vulnerabilities that are easily discovered and exploited. They bypass AEM's core security model and place the responsibility for security solely on the developer, increasing the likelihood of errors. The manual configuration required adds another layer of risk.
-
-By choosing `resource-type servlets`, you leverage AEM's built-in security, automatically enforcing permissions and significantly reducing the attack surface. This is not merely a best practice; it's a fundamental security measure every AEM developer should follow to protect applications from potential attacks.
+- [x] Avoid `sling.servlet.paths` in production code.
+- [x] Register servlets using `sling.servlet.resourceTypes` + selectors + extensions.
+- [x] Never open broad wildcards (like `/bin/*`) in your Dispatcher filters.
+- [x] Always sanitize input parameters using AEM's `XSSAPI`.
+- [x] If using `ResourceResolverFactory.getServiceResourceResolver()`, ensure the sub-service has minimal read-only permissions on only the specific JCR tree needed.

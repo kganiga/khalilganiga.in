@@ -14,6 +14,10 @@ export async function generateMetadata(props: {
   return genPageMetadata({
     title: `Blog - Page ${pageNumber}`,
     canonicalUrl: `blog/page/${pageNumber}`,
+    robots: {
+      index: false,
+      follow: true,
+    },
   })
 }
 

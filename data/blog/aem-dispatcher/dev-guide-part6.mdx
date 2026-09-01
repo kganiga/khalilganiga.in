@@ -1,88 +1,70 @@
 ---
-title: AEM Dispatcher Series 6 - Handling Vanity URLs, Sessions, and `/renders`
+title: 'AEM Dispatcher Series 6 - Handling Vanity URLs, Sessions, and /renders'
 date: '2025-10-24'
+lastmod: '2026-09-01'
 tags: ['Dispatcher', 'Tutorial', 'AEM', 'How To', 'Security', 'Caching', 'Performance']
 draft: false
-summary: Dive deeper into advanced setup — connecting Dispatcher to multiple Publish instances, handling logged-in users securely, and implementing vanity URLs using Apache rewrites.
+summary: 'Connecting Dispatcher to multiple Publish instances, handling logged-in user sessions securely, and implementing vanity URLs using Apache mod_rewrite.'
 images: []
 layout: PostLayout
 isfeatured: false
 ---
 
-If you’ve followed this series so far, you already know how Dispatcher caches and secures your site.  
-But what happens _before_ content is cached — when Dispatcher decides which Publish instance to talk to?  
-Or what about _after_ caching — when users log in, and caching must behave differently?
+If you’ve followed this series so far, you already know how Dispatcher caches and filters incoming requests.
 
-And then there’s another common topic developers often encounter — vanity URLs those clean, short links like `/offers` or `/contact` that map to long AEM paths.
+In this part, we dive into what happens **before** content is cached (how Dispatcher selects and routes traffic to Publish renders) and **after** caching (how Dispatcher handles authenticated user sessions and author-configured vanity URLs).
 
-In this post, we’ll explore how the Dispatcher handles these three critical components:
+Here is a breakdown of the three key areas:
+- **`/renders`**: Connecting Dispatcher to multiple AEM Publish instances for load balancing and failover.
+- **`/sessionmanagement`**: Safely managing authenticated user sessions without leaking private cached data.
+- **Vanity URLs**: Handling short author-defined paths cleanly between Apache `mod_rewrite` and Dispatcher.
 
-- `/renders`: how it connects to AEM Publish instances
-- `/sessionmanagement`: how it handles logged-in users
-- how to properly handle vanity URLs using Dispatcher and Apache
+---
 
 ## 1. Understanding `/renders`: Connecting Dispatcher to AEM Publish Instances
 
-One of the most fundamental sections in `dispatcher.any` is **`/renders`**.
+The **`/renders`** section in `dispatcher.any` defines the backend AEM Publish servers responsible for generating uncached content.
 
-If you imagine Dispatcher as the front-of-house of a restaurant, the `/renders` are like the kitchen staff, the actual AEM Publish servers that prepare the requested content.
+Whenever Dispatcher receives a request that isn't already cached in the docroot, it delegates the request to one of the Publish instances defined in `/renders`.
 
-Whenever Dispatcher doesn’t find a cached version of a page, it fetches it from one of the Publish instances defined under `/renders`.
-
-### Example: `/renders` Configuration
+### Example: Multi-Publish Render Configuration
 
 ```apache
 /renders {
   /publish1 {
     /hostname "publish1.mycompany.com"
     /port "4503"
+    /timeout "30"
   }
   /publish2 {
     /hostname "publish2.mycompany.com"
     /port "4503"
+    /timeout "30"
   }
 }
 ```
 
-Here’s what this configuration does:
-
-- Defines two Publish instances for load balancing.
-- If one instance is unavailable, Dispatcher automatically switches to the next.
-- You can define multiple renders for redundancy and scalability.
-
-### Developer Tip: When to Check `/renders`
-
-If your requests are timing out or returning `502` or `503` errors, check the following:
-
-- The Publish instance is reachable from the Dispatcher host.
-- The hostname and port match what’s configured in AEM Publish under Apache Felix Jetty HTTP Service(`/system/console/configMgr`)
-- Your network or firewall allows communication between Dispatcher and Publish.
-
-You can test connectivity directly using:
-
-```bash
-curl -I http://publish1.mycompany.com:4503/content/mysite.html
-
-```
-
-If this fails, Dispatcher cannot fetch uncached content — which means users will see errors until the cached entries expire.
+### Key Behaviors:
+- **Load Balancing:** Dispatcher balances uncached requests across available render instances.
+- **Automatic Failover:** If `publish1` stops responding or times out, Dispatcher immediately reroutes requests to `publish2`.
 
 ### Sticky Connections with `/stickyConnectionsFor`
 
-If your site includes personalized content or form-based flows, you might need sticky connections.
+If your site contains multi-step wizards or form submissions where subsequent requests must stay on the same Publish node:
 
 ```apache
-/stickyConnectionsFor "/path/to/secured/content"
+/stickyConnectionsFor "/content/mysite/en/checkout"
 ```
 
-This ensures that all requests from a particular session go to the same Publish instance — maintaining consistency for logged-in users or form submissions.
+This pins the user's session to the specific Publish server that handled the initial request.
+
+---
 
 ## 2. Handling Logged-In Users: `/sessionmanagement`
 
-Most AEM sites are public, but many include logged-in areas such as portals, dashboards, or account sections.  
-In these cases, Dispatcher must know how to manage sessions, since caching authenticated pages publicly would be a serious security issue.
+By default, Dispatcher is designed for public anonymous traffic. When an AEM site includes private user dashboards, portals, or account pages, caching authenticated responses publicly would expose private customer data.
 
-This is controlled through the `/sessionmanagement` section.
+The `/sessionmanagement` section isolates authenticated user traffic.
 
 ### Example: Basic `/sessionmanagement`
 
@@ -95,119 +77,86 @@ This is controlled through the `/sessionmanagement` section.
 }
 ```
 
-Property
+| Directive | Description |
+| :--- | :--- |
+| **`/directory`** | Local filesystem directory where Dispatcher stores session-related cache files. |
+| **`/encode`** | Method used to hash session identifiers (typically `md5`). |
+| **`/header`** | The HTTP header or cookie used to identify the user session (e.g. `Cookie:login-token`). |
+| **`/timeout`** | Inactivity timeout in seconds before the session entry is purged. |
 
-Description
+### Best Practice: Explicitly Deny Caching for Secure Paths
 
-`/directory`
-
-Directory where Dispatcher stores session-related data.
-
-`/encode`
-
-Defines how session IDs are encoded (commonly `md5`).
-
-`/header`
-
-Specifies the HTTP header that identifies the session (often `Cookie:login-token`).
-
-`/timeout`
-
-Duration in seconds before the session expires.
-
-This setup ensures that Dispatcher doesn’t mix responses between different authenticated users.  
-Each logged-in session effectively creates its own temporary cache area.
-
-### Developer Tip: Don’t Cache Authenticated Responses
-
-Even when session management is enabled, always **disable caching** for private or personalized areas.
+Even with session management enabled, always enforce explicit cache deny rules for sensitive paths:
 
 ```apache
 /cache {
   /rules {
     /0000 { /glob "*.html" /type "allow" }
-    /0001 { /glob "/content/secure/*" /type "deny" }
+    /0001 { /glob "/content/mysite/en/account/*" /type "deny" }
   }
 }
 ```
 
-This ensures private data is never cached and shared across users.
+---
 
 ## 3. Handling Vanity URLs with Dispatcher and `mod_rewrite`
 
-Vanity URLs are short, readable paths like: `https://www.mysite.com/contact
-`
+Authors frequently define vanity URLs in AEM Page Properties (e.g. `/contact` or `/offers`) to avoid exposing long paths like `/content/mysite/en/company/contact-us.html`.
 
-instead of:`https://www.mysite.com/content/mysite/en/contact-us.html
-`
+Because Dispatcher inspects paths before AEM's internal resource resolver, you should handle vanity mapping at the **Apache `mod_rewrite`** layer.
 
-In AEM, authors can set vanity URLs under **Page Properties → Vanity URL**.  
-However, Dispatcher doesn’t automatically know how to resolve them — so we typically handle vanity mapping at the **Apache layer**, using rewrite rules.
+### Example: Apache Rewrite Rules
 
-### How Vanity URLs Work in AEM
-
-1.  Authors define vanity paths (e.g., `/offers`) for pages.
-2.  These paths are stored in the AEM repository.
-3.  The Vanity URL Servlet on Publish maps them to their actual page paths.
-
-However, for Dispatcher to serve these efficiently, we configure the mapping in Apache before the request reaches Dispatcher.
-
-### Example: Vanity URL Handling in Apache
-
-Add rewrite rules in your Apache configuration (before the Dispatcher module is loaded):
+Add these rewrite rules in your virtual host configuration *before* the Dispatcher handler executes:
 
 ```apache
 RewriteEngine On
 
-# Redirect vanity URLs to actual paths
+# Map clean vanity paths to physical JCR content paths
 RewriteRule ^/offers$ /content/mysite/en/offers.html [PT,L]
-RewriteRule ^/contact$ /content/mysite/en/contact.html [PT,L]
-
+RewriteRule ^/contact$ /content/mysite/en/company/contact-us.html [PT,L]
 ```
 
-Here’s what happens:
+The **`[PT]`** (Pass Through) flag is critical: it directs Apache to hand off the rewritten URI directly to the Dispatcher module for caching and filter inspection.
 
-- A user requests `/offers`.
-- Apache rewrites the URL to `/content/mysite/en/offers.html`.
-- Dispatcher serves the cached content if available; otherwise, it fetches it from Publish.
+### Testing Vanity URL Resolution
 
-The `[PT]` flag passes the rewritten URL through to the next handler (Dispatcher).
-
-### Testing Vanity Rewrites
-
-You can test if rewrite rules are working properly using:
+Verify the rewrite and dispatcher filters using `curl`:
 
 ```bash
-curl -I -L http://localhost/offers
+curl -I -k https://www.mysite.com/contact
 ```
 
-If you receive a `200 OK` response with the correct content, your rewrite rule is correct.  
-If you see `404` or `403`, verify your `/filter` section — Dispatcher might be blocking the rewritten path.
+If you receive `HTTP 200 OK`, the rewrite rule and Dispatcher filters are properly aligned. If you receive `HTTP 404` or `403`, verify that `/filter` in `dispatcher.any` permits the target `.html` path.
 
-## 4. Putting It All Together
+---
 
-Here’s an example that combines `/renders`, `/sessionmanagement`, and caching rules in a single `dispatcher.any` configuration:
+## 4. Complete `dispatcher.any` Farm Example
+
+Here is how `/renders`, `/filter`, `/cache`, and `/sessionmanagement` come together in a production farm:
 
 ```apache
 /farms {
   /mysite {
-    /virtualhosts { "*.mysite.com" }
+    /virtualhosts { "www.mysite.com" "mysite.com" }
 
     /renders {
-      /publish1 { /hostname "publish1" /port "4503" }
-      /publish2 { /hostname "publish2" /port "4503" }
+      /publish1 { /hostname "10.0.1.10" /port "4503" /timeout "30" }
+      /publish2 { /hostname "10.0.1.11" /port "4503" /timeout "30" }
     }
 
     /filter {
-      /0000 { /type "allow" /url "/content/mysite/*" }
-      /0001 { /type "deny" /url "/system/*" }
+      /0000 { /type "deny"  /url "/*" }
+      /0001 { /type "allow" /url "/content/mysite/*" }
+      /0002 { /type "allow" /url "/etc.clientlibs/*" }
+      /0003 { /type "deny"  /url "/system/*" }
     }
 
     /cache {
       /docroot "/opt/dispatcher/cache"
       /rules {
         /0000 { /glob "*.html" /type "allow" }
-        /0001 { /glob "/content/secure/*" /type "deny" }
+        /0001 { /glob "/content/mysite/en/account/*" /type "deny" }
       }
     }
 
@@ -221,34 +170,25 @@ Here’s an example that combines `/renders`, `/sessionmanagement`, and caching 
     /statfileslevel "3"
   }
 }
-
 ```
 
-This setup:
-
-- Defines multiple Publish instances for redundancy.
-- Disables caching for secure content.
-- Handles user sessions securely.
-- Supports vanity URLs via Apache `mod_rewrite`.
+---
 
 ## 5. Developer Troubleshooting Checklist
 
-```markdown
-| Issue                               | Check                                                      |
-| ----------------------------------- | ---------------------------------------------------------- |
-| Requests timing out                 | Verify `/renders` hostnames and ports are reachable.       |
-| Logged-in content being cached      | Check `/cache` rules and `/sessionmanagement`.             |
-| Vanity URLs returning 404           | Confirm rewrite rules and `/filter` paths.                 |
-| Multiple login sessions conflicting | Ensure unique `/directory` and encoding settings per farm. |
-```
+| Symptom | Primary Cause | Troubleshooting Step |
+| :--- | :--- | :--- |
+| **HTTP 502 / 503 errors** | Render instance unreachable | Test connectivity from Dispatcher using `curl -I http://<publish-host>:4503/content/mysite.html` |
+| **Private user data cached** | Missing cache deny rule | Verify `/cache` rules explicitly deny `/content/.../account/*` paths |
+| **Vanity URL returns 404** | Rewrite rule missing `[PT]` flag | Ensure Apache rewrite uses `[PT,L]` and Dispatcher filter allows target path |
+| **Session collisions** | Shared session directory | Ensure `/directory` path is unique per Dispatcher farm |
 
 ---
 
 ## Key Takeaways
 
-- `/renders` define which Publish servers Dispatcher communicates with.
-- `/sessionmanagement` isolates and secures authenticated user sessions.
-- Vanity URLs require Apache rewrite configuration to work seamlessly with Dispatcher.
-- Developers should test vanity rules, session behavior, and render connectivity locally before deployment.
+- `/renders` handles backend Publish connectivity, timeout thresholds, and failover.
+- `/sessionmanagement` isolates authenticated user caching, but private account paths should always be denied in `/cache`.
+- Vanity URLs are most reliably resolved at the Apache `mod_rewrite` layer using the `[PT]` flag.
 
 **Next:** [Part 7 — AEM Dispatcher Troubleshooting: A Developer’s Debugging Playbook](/blog/aem-dispatcher/dev-guide-part7)

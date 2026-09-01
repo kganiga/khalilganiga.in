@@ -1,54 +1,233 @@
 ---
-title: Most useful ADB commands
+title: 'Essential ADB Commands: A Practical Developer Cheat Sheet'
 date: '2020-11-02'
-tags: ['Developer Tools', 'Android']
+lastmod: '2026-09-01'
+tags: ['Developer Tools', 'Android', 'How To', 'Tutorials']
 draft: false
-summary: List of most useful adb commands.
+summary: 'A curated, practical collection of ADB and Fastboot commands for Android developers and power users — covering wireless debugging, app management, logcat filtering, screen recording, and debloating.'
+images:
+  [
+    'https://1.bp.blogspot.com/-93PxNAq2nWY/X6AmQbh21GI/AAAAAAAAAAs/rTvfxqB5nR8qUFpKZw54gSxXbRdhPa9-ACLcBGAsYHQ/w640-h317/most-useful-adb-commands.png',
+  ]
+layout: PostLayout
 ---
 
-![adb_commands](https://1.bp.blogspot.com/-93PxNAq2nWY/X6AmQbh21GI/AAAAAAAAAAs/rTvfxqB5nR8qUFpKZw54gSxXbRdhPa9-ACLcBGAsYHQ/w640-h317/most-useful-adb-commands.png)
-ADB has a wide variety of functions for managing your device, moving content to and from your phone, installing apps, backing up and restoring your software, and more. You can use ADB while your phone is plugged in to a computer.
+Whether you are debugging an Android application, capturing crash logs, debloating OEM bloatware, or automating test scripts, the **Android Debug Bridge (ADB)** is an indispensable tool in your developer arsenal.
 
-Below are the most useful commands and their functions:
+While ADB has dozens of subcommands and flags, you only need a handful of them for 95% of daily engineering tasks.
 
-`adb devices`
-Check connection and get basic information about devices connected to the computer. It will return a list of all devices that you have connected to your computer. If it returns a device ID like the one seen above, you're connected and ready to send commands.
+Here is a curated, field-tested cheat sheet of the most useful ADB and Fastboot commands, grouped by practical workflow.
 
-`adb reboot recovery`
-Reboot your phone into recovery mode.
+---
 
-`adb reboot-bootloader`
-Reboot your phone into bootloader/fastboot mode.
+## 0. Quick Setup: Getting Connected
 
-`adb push [source] [destination]`
-Copy files from your computer to your phone.
+Before running ADB commands, make sure:
+1. **Developer Options** is enabled on your device (*Settings > About Phone > Tap "Build Number" 7 times*).
+2. **USB Debugging** is turned **On** (*Settings > System / Developer options > USB debugging*).
+3. Connect your phone via USB and run:
 
-`adb pull`
-Copy files from your phone to your computer.
+```bash
+adb devices
+```
 
-`adb install [source.apk]`
-Remotely install APKs on your phone.
+If it shows `unauthorized`, unlock your phone and tap **"Always allow from this computer"** when the RSA key prompt appears. Once authorized, you will see `device` next to your serial number.
 
-`adb shell [command]`
-Open or run commands in a terminal on the host Android device.
+---
 
-`adb backup`
-Create a full backup of your phone and save to the computer.
+## 1. Wireless Debugging (No USB Cable Needed)
 
-`adb restore`
-Restore a backup to your phone.
+Tired of having a cable tethered to your laptop? You can switch ADB to Wi-Fi mode:
 
-`adb sideload`
-Push and flash custom ROMs and zips from your computer.
+### On Android 11+:
+Go to *Developer Options > Wireless debugging*, tap *Pair device with pairing code*, then run:
+```bash
+adb pair <ip-address>:<pairing-port>
+adb connect <ip-address>:<connect-port>
+```
 
-`fastboot oem unlock`
-Unlock your bootloader, making root access possible.
+### On Older Android Versions (Initial cable connection required):
+1. Connect via USB once and run:
+   ```bash
+   adb tcpip 5555
+   ```
+2. Find your phone's IP address (*Settings > About Phone > Status / IP address*) and disconnect the USB cable:
+   ```bash
+   adb connect 192.168.1.50:5555
+   ```
+3. To switch back to USB mode later:
+   ```bash
+   adb usb
+   ```
 
-`fastboot devices`
-Check connection and get basic information about devices connected to the computer.
+---
 
-`fastboot flash recovery`
-Flash a custom recovery image to your phone.
+## 2. App & APK Management
 
-`fastboot boot recovery`
-Reboot to custom recovery without installing recovery.
+### Installing and Updating Apps
+```bash
+# Basic install
+adb install app-debug.apk
+
+# Reinstall / Update while keeping existing app data and cache (-r)
+adb install -r app-debug.apk
+
+# Allow version downgrade (-d)
+adb install -r -d app-release.apk
+
+# Grant all runtime permissions automatically upon install (-g)
+adb install -g app-debug.apk
+```
+
+### Listing Installed Packages
+```bash
+# List all packages
+adb shell pm list packages
+
+# List only third-party (user-installed) apps
+adb shell pm list packages -3
+
+# Filter packages by keyword
+adb shell pm list packages | grep "mycompany"
+```
+
+### Uninstalling & Debloating OEM Apps
+```bash
+# Standard uninstall
+adb uninstall com.example.myapp
+
+# Uninstall while keeping app cache and data (-k)
+adb uninstall -k com.example.myapp
+
+# Debloat system/pre-installed apps without root (for current user)
+adb shell pm uninstall -k --user 0 com.samsung.android.bixby.agent
+```
+
+---
+
+## 3. Logcat & Live Debugging
+
+Raw `adb logcat` is like drinking from a firehose. Filter it effectively to see only what matters:
+
+```bash
+# Clear previous log buffer before starting your test
+adb logcat -c
+
+# Filter by specific Tag and Log Level (e.g. MyTag at DEBUG level, suppress all others)
+adb logcat -s MyTag:D
+
+# Filter only errors and fatal crashes across all apps
+adb logcat *:E
+
+# Filter logs for a specific PID (Process ID)
+adb logcat --pid=$(adb shell pidof -s com.example.myapp)
+
+# Output formatted logs with timestamps to a local file
+adb logcat -v time > crash_dump.log
+```
+
+---
+
+## 4. File Transfers & Shell Commands
+
+### Pushing and Pulling Files
+```bash
+# Copy file from PC to phone's downloads folder
+adb push my-data.json /sdcard/Download/
+
+# Copy file or directory from phone to local PC
+adb pull /sdcard/Download/exported_logs.zip ./logs/
+```
+
+### Screen Capture & Recording
+```bash
+# Take a screenshot and save directly to phone
+adb shell screencap -p /sdcard/screenshot.png
+adb pull /sdcard/screenshot.png ./
+
+# Record screen video (MP4) — press Ctrl+C to stop recording
+adb shell screenrecord /sdcard/demo.mp4
+adb pull /sdcard/demo.mp4 ./
+```
+
+### Simulating User Input & Typing
+```bash
+# Type text into the active input field (great for long test passwords)
+adb shell input text "SecretPassword123"
+
+# Simulate physical button presses
+adb shell input keyevent 26   # Power button toggle
+adb shell input keyevent 3    # Home button
+adb shell input keyevent 4    # Back button
+adb shell input keyevent 224  # Wake screen
+
+# Tap specific screen coordinates (X, Y)
+adb shell input tap 500 1200
+```
+
+---
+
+## 5. Simulating Edge Cases & Device State
+
+ADB lets you simulate environment changes without manually messing with physical hardware:
+
+```bash
+# Mock battery level to 15% (for testing low-battery app alerts)
+adb shell dumpsys battery set level 15
+
+# Unplug virtual AC power
+adb shell dumpsys battery unplug
+
+# Reset battery status back to actual physical state
+adb shell dumpsys battery reset
+
+# Force-stop an unresponsive app process
+adb shell am force-stop com.example.myapp
+
+# Clear all app storage and cache
+adb shell pm clear com.example.myapp
+```
+
+---
+
+## 6. Fastboot & Bootloader Essentials
+
+When modifying firmware, flashing recoveries, or working with unlocked bootloaders:
+
+```bash
+# Reboot directly into Fastboot/Bootloader mode
+adb reboot bootloader
+
+# Reboot directly into Recovery mode (TWRP / stock recovery)
+adb reboot recovery
+
+# Check connected devices in Fastboot mode
+fastboot devices
+
+# Boot a custom recovery image temporarily without flashing it to device
+fastboot boot recovery.img
+
+# Flash a partition image (e.g. boot, recovery, system)
+fastboot flash boot boot.img
+fastboot flash recovery recovery.img
+
+# Reboot back to system from Fastboot
+fastboot reboot
+```
+
+---
+
+## Quick Reference Summary
+
+| Task | Command |
+| :--- | :--- |
+| **List connected devices** | `adb devices` |
+| **Connect wirelessly** | `adb connect <ip>:5555` |
+| **Reinstall APK preserving data** | `adb install -r app.apk` |
+| **Filter error logs** | `adb logcat *:E` |
+| **Debloat user app** | `adb shell pm uninstall -k --user 0 <package>` |
+| **Take screenshot** | `adb shell screencap -p /sdcard/s.png` |
+| **Input long text** | `adb shell input text "<string>"` |
+| **Reboot to bootloader** | `adb reboot bootloader` |
+
+Bookmark this cheat sheet for quick reference during testing and development sessions.
