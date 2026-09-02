@@ -1,8 +1,8 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'Khalil Ganiga',
-  author: 'Khalil Ganiga ',
-  headerTitle: 'Khalil Ganiga',
+  title: 'Khalil Ganiga Blog',
+  author: 'Khalil Ganiga',
+  headerTitle: 'Khalil Ganiga Blog',
   description: "A developer's log book",
   language: 'en-us',
   siteUrl: 'https://www.khalilganiga.in',

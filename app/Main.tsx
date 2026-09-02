@@ -6,8 +6,8 @@ import SocialIcons from '@/components/SocialIcons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import tagData from 'app/tag-data.json'
-import { allStories } from 'contentlayer/generated'
-import { ArrowRight, BookOpenText, Code2, PenLine, Sparkles } from 'lucide-react'
+import { allStories, allTools } from 'contentlayer/generated'
+import { ArrowRight, BookOpenText, Code2, PenLine, Sparkles, Wrench } from 'lucide-react'
 import Image from 'next/image'
 
 const MAX_DISPLAY = 6
@@ -19,6 +19,7 @@ export default function Home({ posts }) {
     .slice()
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
+  const activeTools = (allTools || []).filter((tool) => tool.draft !== true)
   const featuredStories = sortedStories.filter((story) => story.isfeatured)
   const remainingStories = sortedStories.filter((story) => !story.isfeatured)
   const finalStories = [...featuredStories, ...remainingStories].slice(0, MAX_FEATURED_STORIES)
@@ -27,6 +28,7 @@ export default function Home({ posts }) {
   const stats = [
     { label: 'Technical notes', value: posts.length },
     { label: 'Stories', value: allStories.length },
+    { label: 'Tools', value: activeTools.length },
     { label: 'Topics', value: Object.keys(tagCounts).length },
   ]
 
@@ -60,8 +62,14 @@ export default function Home({ posts }) {
                   <BookOpenText className="h-4 w-4" />
                 </Link>
               </Button>
+              <Button asChild className="gap-2" size="lg" variant="outline">
+                <Link href="/tools" className="break-normal">
+                  Explore tools
+                  <Wrench className="h-4 w-4" />
+                </Link>
+              </Button>
             </div>
-            <div className="mt-10 grid max-w-2xl grid-cols-3 gap-3">
+            <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               {stats.map((item) => (
                 <div
                   key={item.label}

@@ -1,6 +1,6 @@
 import { slug } from 'github-slugger'
 import { sortPosts, allCoreContent } from 'pliny/utils/contentlayer'
-import { allBlogs, allStories } from 'contentlayer/generated'
+import { allBlogs, allStories, allTools } from 'contentlayer/generated'
 import Link from '@/components/Link'
 
 interface RelatedPostsProps {
@@ -16,10 +16,11 @@ const RelatedPosts = ({ tags, currentSlug }: RelatedPostsProps) => {
 
   const tag = slug(tags[0]) // Ensure the tag is properly slugged
 
-  // Merge and filter both blogs and stories based on the slugged tag and exclude the current post
+  // Merge and filter blogs, stories, and tools based on the slugged tag and exclude the current post
+  const pool = [...allBlogs, ...(allStories || []), ...(allTools || [])]
   const relatedContent = allCoreContent(
     sortPosts(
-      [...allBlogs, ...allStories].filter(
+      pool.filter(
         (item) =>
           item.tags && item.tags.map((t) => slug(t)).includes(tag) && item.slug !== currentSlug
       )
@@ -42,7 +43,7 @@ const RelatedPosts = ({ tags, currentSlug }: RelatedPostsProps) => {
           <li key={item.slug} className="flex items-start">
             <span className="mr-2 text-sm text-gray-500 dark:text-gray-400">{index + 1}.</span>
             <Link
-              href={`/${item.type.toLowerCase() === 'blog' ? 'blog' : 'stories'}/${item.slug}`}
+              href={`/${item.path}`}
               className="text-base font-medium capitalize text-primary-600 hover:underline dark:text-primary-400"
             >
               {item.title}

@@ -84,12 +84,16 @@ function createTagCount(allBlogs) {
   writeFileSync('./app/tag-data.json', JSON.stringify(tagCount))
 }
 
-function createSearchIndex(allBlogs: any[], allStories: any[] = []) {
+function createSearchIndex(allBlogs: any[], allStories: any[] = [], allTools: any[] = []) {
   if (
     siteMetadata?.search?.provider === 'kbar' &&
     siteMetadata.search.kbarConfig.searchDocumentsPath
   ) {
-    const merged = Array.isArray(allStories) ? [...allBlogs, ...allStories] : allBlogs
+    const merged = [
+      ...allBlogs,
+      ...(Array.isArray(allStories) ? allStories : []),
+      ...(Array.isArray(allTools) ? allTools : []),
+    ]
     writeFileSync(
       `public/${siteMetadata.search.kbarConfig.searchDocumentsPath}`,
       JSON.stringify(allCoreContent(sortPosts(merged)))
@@ -186,6 +190,52 @@ export const Story = defineDocumentType(() => ({
   },
 }))
 
+export const Tool = defineDocumentType(() => ({
+  name: 'Tool',
+  filePathPattern: 'tools/**/*.mdx',
+  contentType: 'mdx',
+  fields: {
+    title: { type: 'string', required: true },
+    date: { type: 'date', required: true },
+    tags: { type: 'list', of: { type: 'string' }, default: [] },
+    lastmod: { type: 'date' },
+    draft: { type: 'boolean' },
+    summary: { type: 'string' },
+    images: { type: 'json' },
+    authors: { type: 'list', of: { type: 'string' } },
+    layout: { type: 'string' },
+    bibliography: { type: 'string' },
+    canonicalUrl: { type: 'string' },
+    isfeatured: { type: 'boolean' },
+    toolUrl: { type: 'string' },
+    githubUrl: { type: 'string' },
+  },
+  computedFields: {
+    ...computedFields,
+    structuredData: {
+      type: 'json',
+      resolve: (doc) => {
+        const canonical =
+          doc.canonicalUrl && doc.canonicalUrl.trim()
+            ? doc.canonicalUrl.startsWith('http')
+              ? doc.canonicalUrl
+              : `${siteMetadata.siteUrl}/${doc.canonicalUrl.replace(/^\//, '')}`
+            : `${siteMetadata.siteUrl}/${formatSlug(doc._raw.flattenedPath)}`
+        return {
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          headline: doc.title,
+          datePublished: doc.date,
+          dateModified: doc.lastmod || doc.date,
+          description: doc.summary,
+          image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
+          url: canonical,
+        }
+      },
+    },
+  },
+}))
+
 export const PrivacyPolicy = defineDocumentType(() => ({
   name: 'PrivacyPolicy',
   filePathPattern: 'privacy/**/*.mdx',
@@ -264,7 +314,7 @@ export const Authors = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: 'data',
-  documentTypes: [Blog, Authors, Story, PrivacyPolicy, TermsAndCondition],
+  documentTypes: [Blog, Authors, Story, Tool, PrivacyPolicy, TermsAndCondition],
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [
@@ -295,8 +345,8 @@ export default makeSource({
     ],
   },
   onSuccess: async (importData) => {
-    const { allBlogs, allStories } = await importData()
+    const { allBlogs, allStories, allTools } = await importData()
     createTagCount(allBlogs)
-    createSearchIndex(allBlogs, allStories)
+    createSearchIndex(allBlogs, allStories, allTools)
   },
 })

@@ -4,8 +4,8 @@
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Khalil Ganiga",
-  "short_name": "Khalil Ganiga",
+  "name": "Khalil Ganiga Blog",
+  "short_name": "Khalil Ganiga Blog",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
