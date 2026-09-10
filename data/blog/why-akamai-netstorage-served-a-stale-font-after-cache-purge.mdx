@@ -1,0 +1,46 @@
+---
+title: Purging Static Resources in Akamai. Why It Did Not Fix a Stale Font
+date: '2026-09-11'
+tags: ['AEM', 'Caching', 'CDN', 'Performance', 'How To']
+draft: false
+summary: 'A font update shipped with a new query param on the CSS reference, so the cache busting should have just worked. It did not. Here is the full chain: dispatcher cache, an Akamai setting called ignore query params, and a NetStorage file that was never actually updated.'
+images: []
+layout: PostLayout
+isfeatured: false
+---
+
+Today I debugged one crazy issue. Sounds simple on paper, a font not showing up after a deploy, but it took a lot longer than it should have, and by the end it turned out to be two separate problems stacked on top of each other.
+
+Front end had updated a font and added a new query param to the CSS reference, something like `font.woff2?v=2`, so the new file would actually get fetched after deployment. Normal cache busting. Should have just worked.
+
+It didn't. Every browser kept loading the old font.
+
+Given the stack, my first guess was dispatcher cache. AEM as a Cloud Service is supposed to clear dispatcher cache automatically after a deployment, but I wasn't fully confident that had happened, so I used a custom tool I'd already built for clearing dispatcher cache manually. Ran it, waited a few minutes, checked again. Still the old font.
+
+So I looked at the actual request instead of guessing. The request did have the new query param, so the browser was asking for the right thing. But the response headers told a different story, there was an Akamai cache tag, and the Last-Modified header was from a month ago. Whatever was answering that request had never seen the new file. I purged the cache for the font path directly, with the query param and without it. Still stale.
+
+Went into the Akamai property config for that path and found a setting called ignore query params, set to true. When that's on, Akamai builds its cache key from the path alone and drops the query string completely, so `font.woff2?v=1` and `font.woff2?v=2` get treated as the exact same object. That looked like the answer. Turned it off, purged again.
+
+Still the old font.
+
+So that theory was wrong, or at least not the whole story. Looked closer and found the font was being served directly out of Akamai NetStorage, not through the Dispatcher or publish pipeline at all. Checked how these font assets are actually stored in that property, confirmed the path, and re-uploaded the file directly into NetStorage. Purged the cache one more time. Worked immediately.
+
+## What was actually going on
+
+Two things were true at the same time, and either one alone would have caused this.
+
+The font in NetStorage had never been replaced. The deployment updated the CSS reference and the query param, but nothing in that deployment actually pushed a new font file into NetStorage. So no matter what the CDN did, the origin was still handing back the old file.
+
+Ignore query params being on meant that even if NetStorage had been updated correctly, the query param trick would have done nothing at the Akamai layer anyway. Akamai would have kept serving whatever it already had cached until someone purged it by hand. The browser side of cache busting worked fine. The CDN side never had a chance, because that setting made it ignore the one thing that was supposed to force a fresh fetch.
+
+## What I'd check next time
+
+If a static asset lives in NetStorage outside the normal AEM deploy pipeline, updating it somewhere else does nothing unless that specific NetStorage path gets updated too. That upload needs to be automated as part of deployment, or someone needs to know it's a required manual step every single time. Right now it sounds like the second one, which is fragile.
+
+If ignore query params is on for a path, query string cache busting on that path isn't actually doing anything. Worth checking which of your rules have that setting enabled, because any of them will quietly break the assumption that adding `?v=2` forces a fresh copy.
+
+And if you flip a caching setting while debugging, decide on purpose whether it stays flipped. Don't leave it changed just because it happened to be off when the real fix landed.
+
+---
+
+*Draft note, delete before publishing: I kept the NetStorage tooling generic since I don't know if you're using Akamai Control Center's upload accounts, an FTP or Cyberduck workflow, or something custom. Naming the actual tool would help readers searching for this exact problem. Also worth adding whether you reverted ignore query params or left it off, and why. Still needs a cover image, and a full read through since this is written from your chat description.*
