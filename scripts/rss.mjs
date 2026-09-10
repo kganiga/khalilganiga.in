@@ -1,4 +1,4 @@
-import { writeFileSync, mkdirSync, readFileSync } from 'fs'
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs'
 import path from 'path'
 import { slug } from 'github-slugger'
 import { escape } from 'pliny/utils/htmlEscaper.js'
@@ -35,12 +35,27 @@ const generateRss = (config, posts, page = 'feed.xml') => `
   </rss>
 `
 
+// `next build` performs the static export to ./out before this script runs, so anything
+// written only to ./public here is one build stale in the deployed ./out copy. Mirror the
+// generated feeds into ./out (when it exists) so the exported site isn't left behind.
+function writeFeed(relativePath, contents) {
+  const publicPath = path.join('public', relativePath)
+  mkdirSync(path.dirname(publicPath), { recursive: true })
+  writeFileSync(publicPath, contents)
+
+  if (existsSync('out')) {
+    const outPath = path.join('out', relativePath)
+    mkdirSync(path.dirname(outPath), { recursive: true })
+    writeFileSync(outPath, contents)
+  }
+}
+
 async function generateRSS(config, allBlogs, page = 'feed.xml') {
   const publishPosts = allBlogs.filter((post) => post.draft !== true)
   // RSS for blog post
   if (publishPosts.length > 0) {
     const rss = generateRss(config, sortPosts(publishPosts))
-    writeFileSync(`./public/${page}`, rss)
+    writeFeed(page, rss)
   }
 
   if (publishPosts.length > 0) {
@@ -49,9 +64,7 @@ async function generateRSS(config, allBlogs, page = 'feed.xml') {
         (post) => post.tags && post.tags.map((t) => slug(t)).includes(tag)
       )
       const rss = generateRss(config, filteredPosts, `tags/${tag}/${page}`)
-      const rssPath = path.join('public', 'tags', tag)
-      mkdirSync(rssPath, { recursive: true })
-      writeFileSync(path.join(rssPath, page), rss)
+      writeFeed(path.join('tags', tag, page), rss)
     }
   }
 }

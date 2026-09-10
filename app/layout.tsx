@@ -57,6 +57,8 @@ export const metadata: Metadata = {
     title: siteMetadata.title,
     card: 'summary_large_image',
     images: [siteMetadata.socialBanner],
+    site: siteMetadata.twitter ? `@${siteMetadata.twitter.split('/').pop()}` : undefined,
+    creator: siteMetadata.twitter ? `@${siteMetadata.twitter.split('/').pop()}` : undefined,
   },
 }
 

@@ -1,18 +1,26 @@
 'use client'
 
-import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import { allStories } from 'contentlayer/generated'
 import type { Story } from 'contentlayer/generated'
-import { ArrowRight, BookOpenText, CalendarDays, Search, Sparkles } from 'lucide-react'
+import { slug as slugify } from 'github-slugger'
+import storyTagData from 'app/story-tag-data.json'
+import { ArrowRight, BookOpenText, CalendarDays, Search, Sparkles, UserRound } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 
-const STORIES_PER_PAGE = 6
+// A theme only gets its own browsing link once at least one other story shares it.
+const MIN_STORIES_PER_THEME_PAGE = 2
+
+function formatTheme(tag: string) {
+  return tag
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 export default function StoriesPage() {
-  const [pagesLoaded, setPagesLoaded] = React.useState(1)
   const [query, setQuery] = React.useState('')
 
   const sortedStories = React.useMemo(
@@ -20,6 +28,13 @@ export default function StoriesPage() {
       allStories.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     []
   )
+
+  const browsableThemes = React.useMemo(() => {
+    const counts = storyTagData as Record<string, number>
+    return Object.keys(counts)
+      .filter((tag) => counts[tag] >= MIN_STORIES_PER_THEME_PAGE)
+      .sort((a, b) => counts[b] - counts[a])
+  }, [])
 
   const featuredStory = React.useMemo(
     () => sortedStories.find((story) => story.isfeatured) || sortedStories[0],
@@ -39,35 +54,6 @@ export default function StoriesPage() {
       return searchableText.includes(normalizedQuery)
     })
   }, [query, sortedStories])
-
-  const totalPages = Math.ceil(filteredStories.length / STORIES_PER_PAGE)
-  const visibleStories = React.useMemo(
-    () => filteredStories.slice(0, pagesLoaded * STORIES_PER_PAGE),
-    [filteredStories, pagesLoaded]
-  )
-
-  React.useEffect(() => {
-    setPagesLoaded(1)
-  }, [query])
-
-  const sentinelRef = React.useRef<HTMLDivElement | null>(null)
-  React.useEffect(() => {
-    if (pagesLoaded >= totalPages) return
-    const el = sentinelRef.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setPagesLoaded((p) => Math.min(p + 1, totalPages))
-        }
-      },
-      { root: null, rootMargin: '200px', threshold: 0 }
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [pagesLoaded, totalPages])
 
   const getImageUrl = (story: Story) => {
     const imageList = story.images
@@ -94,14 +80,32 @@ export default function StoriesPage() {
           <div className="flex flex-col justify-center">
             <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-sm font-medium text-primary-800 dark:border-primary-900/80 dark:bg-primary-950/70 dark:text-primary-200">
               <Sparkles className="h-4 w-4" />
-              Stories, reflections, and creative notes
+              Telugu short stories
             </div>
             <h1 className="text-4xl font-bold leading-tight tracking-tight text-gray-950 dark:text-white sm:text-5xl lg:text-6xl">
               Musings
             </h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-gray-700 dark:text-gray-300 sm:text-lg">
-              A collection of short stories and reflective pieces that move between memory,
-              imagination, people, and place.
+              A collection of original short fiction written in Telugu (తెలుగు) — stories about
+              memory, family, small-town life, and the people who stay with you long after you stop
+              reading.
+            </p>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+              Written by{' '}
+              <Link
+                href="/about"
+                className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+              >
+                Khalil Ganiga
+              </Link>
+              . Looking for the AEM and developer writing instead? That lives on the{' '}
+              <Link
+                href="/blog"
+                className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+              >
+                blog
+              </Link>
+              .
             </p>
             <div className="mt-8 grid max-w-lg grid-cols-3 gap-3">
               <div className="rounded-lg border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-gray-800/80 dark:bg-gray-900/70">
@@ -122,7 +126,7 @@ export default function StoriesPage() {
               </div>
               <div className="rounded-lg border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-gray-800/80 dark:bg-gray-900/70">
                 <div className="text-2xl font-bold text-gray-950 dark:text-white">
-                  {new Set(sortedStories.flatMap((story) => story.tags || [])).size}
+                  {browsableThemes.length}
                 </div>
                 <div className="mt-1 text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
                   Themes
@@ -148,7 +152,10 @@ export default function StoriesPage() {
                     <BookOpenText className="h-4 w-4" />
                     Featured musing
                   </div>
-                  <h2 className="text-2xl font-semibold capitalize leading-tight text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+                  <h2
+                    lang={featuredStory.language}
+                    className="text-2xl font-semibold capitalize leading-tight text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400"
+                  >
                     {featuredStory.title}
                   </h2>
                   <p className="mt-3 line-clamp-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
@@ -160,6 +167,26 @@ export default function StoriesPage() {
           )}
         </div>
       </section>
+
+      {browsableThemes.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-950 dark:text-white">
+            <UserRound className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+            Browse musings by theme
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {browsableThemes.map((tag) => (
+              <Link
+                key={tag}
+                href={`/stories/tags/${tag}`}
+                className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-primary-200 hover:text-primary-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-primary-900 dark:hover:text-primary-400"
+              >
+                {formatTheme(tag)}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -182,9 +209,9 @@ export default function StoriesPage() {
           </div>
         </div>
 
-        {visibleStories.length > 0 ? (
+        {filteredStories.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleStories.map((story: Story) => (
+            {filteredStories.map((story: Story) => (
               <Card
                 key={story.slug}
                 className="group overflow-hidden p-0 transition duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md dark:hover:border-primary-900"
@@ -203,7 +230,10 @@ export default function StoriesPage() {
                       <CalendarDays className="h-4 w-4" />
                       <time dateTime={story.date}>{formatDate(story.date)}</time>
                     </div>
-                    <h3 className="text-lg font-semibold capitalize leading-snug text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+                    <h3
+                      lang={story.language}
+                      className="text-lg font-semibold capitalize leading-snug text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400"
+                    >
                       {story.title}
                     </h3>
                     <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
@@ -225,23 +255,6 @@ export default function StoriesPage() {
             </p>
           </Card>
         )}
-
-        <div ref={sentinelRef} className="mt-8 flex justify-center">
-          {pagesLoaded < totalPages ? (
-            <Button
-              variant="outline"
-              onClick={() => setPagesLoaded((p) => Math.min(p + 1, totalPages))}
-            >
-              Load more musings
-            </Button>
-          ) : (
-            visibleStories.length > 0 && (
-              <div className="py-4 text-sm text-gray-600 dark:text-gray-300">
-                You have reached the end.
-              </div>
-            )
-          )}
-        </div>
       </section>
     </div>
   )

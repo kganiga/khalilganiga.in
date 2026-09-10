@@ -11,7 +11,9 @@ import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import RelatedPosts from '@/components/RelatedPosts'
+import RelatedHubArticles from '@/components/RelatedHubArticles'
 import AISummarizer from '@/components/AISummarizer'
+import { getHubForArticleSlug } from '@/data/aemHubs'
 
 const editUrl = (path) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
 const discussUrl = (path) =>
@@ -43,6 +45,13 @@ export default function PostLayout({
 }: LayoutProps) {
   const { filePath, path, slug, date, title, tags } = content
   const basePath = path.split('/')[0]
+  const hub = getHubForArticleSlug(slug)
+  // Short posts (quick how-tos, tool write-ups) don't have enough content to
+  // justify all four ad slots without pushing the ads-to-content ratio too high -
+  // they keep the top and end-of-content units and skip the footer/autorelaxed
+  // ones. Long-form articles (guides, series entries) keep all four.
+  const wordCount = (content.readingTime as { words?: number } | undefined)?.words ?? 0
+  const isLongForm = wordCount >= 600
 
   return (
     <SectionContainer>
@@ -64,6 +73,16 @@ export default function PostLayout({
               <div>
                 <PageTitle>{title}</PageTitle>
               </div>
+              {hub && (
+                <div className="pt-2">
+                  <Link
+                    href={`/blog/topics/${hub.slug}`}
+                    className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-primary-600 hover:border-primary-200 dark:border-gray-800 dark:bg-gray-950 dark:text-primary-400"
+                  >
+                    Part of: {hub.shortTitle} →
+                  </Link>
+                </div>
+              )}
               {/* Leaderboard ad below the title */}
               <div className="mt-4 min-h-[90px] sm:min-h-[140px] lg:min-h-[280px]">
                 <AdSlot
@@ -132,18 +151,24 @@ export default function PostLayout({
                 </div>
               )}
               <div className="flex items-center space-x-4 py-6">
-                <RelatedPosts tags={tags} currentSlug={slug} />
+                {hub ? (
+                  <RelatedHubArticles hubSlug={hub.slug} currentSlug={slug} />
+                ) : (
+                  <RelatedPosts tags={tags} currentSlug={slug} />
+                )}
               </div>
-              {/* Footer ad */}
-              <div className="min-h-[90px] py-6 text-center">
-                <AdSlot
-                  className="mx-auto"
-                  style={{ display: 'block', width: '100%', maxWidth: 320, margin: '0 auto' }}
-                  slot="6343320175"
-                  enabled={siteMetadata.ads?.enabled ?? true}
-                  client={siteMetadata.ads?.client}
-                />
-              </div>
+              {/* Footer ad - only on long-form content, see isLongForm above */}
+              {isLongForm && (
+                <div className="min-h-[90px] py-6 text-center">
+                  <AdSlot
+                    className="mx-auto"
+                    style={{ display: 'block', width: '100%', maxWidth: 320, margin: '0 auto' }}
+                    slot="6343320175"
+                    enabled={siteMetadata.ads?.enabled ?? true}
+                    client={siteMetadata.ads?.client}
+                  />
+                </div>
+              )}
               {siteMetadata.comments && (
                 <div
                   className="pb-6 pt-6 text-center text-gray-700 dark:text-gray-300"
@@ -201,15 +226,17 @@ export default function PostLayout({
                   &larr; Back to the blog
                 </Link>
               </div>
-              {/* Vertical/autorelaxed ad below the back link */}
-              <AdSlot
-                className="mx-auto py-6 text-center"
-                style={{ display: 'block', width: '100%' }}
-                slot="8631089083"
-                adFormat="autorelaxed"
-                enabled={siteMetadata.ads?.enabled ?? true}
-                client={siteMetadata.ads?.client}
-              />
+              {/* Vertical/autorelaxed ad below the back link - long-form only, see isLongForm above */}
+              {isLongForm && (
+                <AdSlot
+                  className="mx-auto py-6 text-center"
+                  style={{ display: 'block', width: '100%' }}
+                  slot="8631089083"
+                  adFormat="autorelaxed"
+                  enabled={siteMetadata.ads?.enabled ?? true}
+                  client={siteMetadata.ads?.client}
+                />
+              )}
             </footer>
           </div>
         </div>

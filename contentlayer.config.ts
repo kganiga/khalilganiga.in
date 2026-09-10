@@ -84,6 +84,35 @@ function createTagCount(allBlogs) {
   writeFileSync('./app/tag-data.json', JSON.stringify(tagCount))
 }
 
+// The generic "stories" marker just identifies the content type, not a theme -
+// exclude it so /stories/tags only surfaces real, browsable topics.
+const STORY_TAXONOMY_EXCLUDED_TAGS = new Set(['stories'])
+
+/**
+ * Count the occurrences of real theme tags across stories (excluding the generic
+ * "stories" marker tag) and write to a separate json file, kept apart from the
+ * blog's tag-data.json so the two content taxonomies never bleed into each other.
+ */
+function createStoryTagCount(allStories) {
+  const tagCount: Record<string, number> = {}
+  allStories.forEach((file) => {
+    if (file.tags && file.draft !== true) {
+      file.tags.forEach((tag) => {
+        const formattedTag = slug(tag)
+        if (STORY_TAXONOMY_EXCLUDED_TAGS.has(formattedTag)) return
+        tagCount[formattedTag] = (tagCount[formattedTag] || 0) + 1
+      })
+    }
+  })
+  writeFileSync('./app/story-tag-data.json', JSON.stringify(tagCount))
+}
+
+// queens-well.mdx is the English translation of raani-baavi.mdx (the only bilingual
+// pair in the stories section) - every other story is Telugu.
+function isEnglishStory(flattenedPath: string) {
+  return flattenedPath.endsWith('queens-well')
+}
+
 function createSearchIndex(allBlogs: any[], allStories: any[] = [], allTools: any[] = []) {
   if (
     siteMetadata?.search?.provider === 'kbar' &&
@@ -140,6 +169,7 @@ export const Blog = defineDocumentType(() => ({
           description: doc.summary,
           image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
           url: canonical,
+          inLanguage: 'en',
         }
       },
     },
@@ -166,6 +196,10 @@ export const Story = defineDocumentType(() => ({
   },
   computedFields: {
     ...computedFields,
+    language: {
+      type: 'string',
+      resolve: (doc) => (isEnglishStory(doc._raw.flattenedPath) ? 'en' : 'te'),
+    },
     structuredData: {
       type: 'json',
       resolve: (doc) => {
@@ -184,6 +218,7 @@ export const Story = defineDocumentType(() => ({
           description: doc.summary,
           image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
           url: canonical,
+          inLanguage: isEnglishStory(doc._raw.flattenedPath) ? 'en' : 'te',
         }
       },
     },
@@ -230,6 +265,7 @@ export const Tool = defineDocumentType(() => ({
           description: doc.summary,
           image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
           url: canonical,
+          inLanguage: 'en',
         }
       },
     },
@@ -347,6 +383,7 @@ export default makeSource({
   onSuccess: async (importData) => {
     const { allBlogs, allStories, allTools } = await importData()
     createTagCount(allBlogs)
+    createStoryTagCount(allStories)
     createSearchIndex(allBlogs, allStories, allTools)
   },
 })

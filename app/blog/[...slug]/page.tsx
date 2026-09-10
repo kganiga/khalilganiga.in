@@ -12,7 +12,9 @@ import PostLayout from '@/layouts/PostLayout'
 import PostBanner from '@/layouts/PostBanner'
 import { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
+import { getHubForArticleSlug, getHubPrevNext } from '@/data/aemHubs'
 
+const twitterHandle = siteMetadata.twitter ? `@${siteMetadata.twitter.split('/').pop()}` : undefined
 const isProduction = process.env.NODE_ENV === 'production'
 const defaultLayout = 'PostLayout'
 const layouts = {
@@ -64,7 +66,7 @@ export async function generateMetadata(props: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: post.title,
+      title: `${post.title} | ${siteMetadata.title}`,
       description: post.summary,
       siteName: siteMetadata.title,
       locale: 'en_US',
@@ -77,9 +79,11 @@ export async function generateMetadata(props: {
     },
     twitter: {
       card: 'summary_large_image',
-      title: post.title,
+      title: `${post.title} | ${siteMetadata.title}`,
       description: post.summary,
       images: imageList,
+      site: twitterHandle,
+      creator: twitterHandle,
     },
   }
 }
@@ -109,6 +113,7 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
     return {
       '@type': 'Person',
       name: author.name,
+      url: `${siteMetadata.siteUrl}/about`,
     }
   })
   jsonLd['publisher'] = {
@@ -118,6 +123,46 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
       '@type': 'ImageObject',
       url: `${siteMetadata.siteUrl}${siteMetadata.image}`,
     },
+  }
+
+  const hub = getHubForArticleSlug(post.slug)
+  const breadcrumbItems = [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: siteMetadata.siteUrl },
+    { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteMetadata.siteUrl}/blog` },
+    ...(hub
+      ? [
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: hub.shortTitle,
+            item: `${siteMetadata.siteUrl}/blog/topics/${hub.slug}`,
+          },
+        ]
+      : []),
+    {
+      '@type': 'ListItem',
+      position: hub ? 4 : 3,
+      name: post.title,
+      item: `${siteMetadata.siteUrl}/${post.path}`,
+    },
+  ]
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbItems,
+  }
+
+  // Within a hub, "previous/next" should mean "earlier/later in the guide", not
+  // "whatever else happened to publish on an adjacent date".
+  let hubPrev: { path: string; title: string } | undefined = prev
+  let hubNext: { path: string; title: string } | undefined = next
+  if (hub) {
+    const { prevSlug, nextSlug } = getHubPrevNext(hub, post.slug)
+    const prevPost = prevSlug ? allBlogs.find((p) => p.slug === prevSlug) : undefined
+    const nextPost = nextSlug ? allBlogs.find((p) => p.slug === nextSlug) : undefined
+    hubPrev = prevPost ? { path: prevPost.path, title: prevPost.title } : undefined
+    hubNext = nextPost ? { path: nextPost.path, title: nextPost.title } : undefined
   }
 
   const Layout = layouts[post.layout || defaultLayout]
@@ -139,11 +184,15 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+          />
           <Layout
             content={mainContent}
             authorDetails={authorDetails}
-            next={next}
-            prev={prev}
+            next={hubNext}
+            prev={hubPrev}
             rawText={post.body.raw}
           >
             <MDXLayoutRenderer code={post.body.code} components={components} toc={post.toc} />

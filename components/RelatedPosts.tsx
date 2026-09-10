@@ -1,6 +1,5 @@
 import { slug } from 'github-slugger'
-import { sortPosts, allCoreContent } from 'pliny/utils/contentlayer'
-import { allBlogs, allStories, allTools } from 'contentlayer/generated'
+import { allBlogs, allTools } from 'contentlayer/generated'
 import Link from '@/components/Link'
 
 interface RelatedPostsProps {
@@ -8,27 +7,35 @@ interface RelatedPostsProps {
   currentSlug: string
 }
 
+const MAX_RELATED = 5
+
 const RelatedPosts = ({ tags, currentSlug }: RelatedPostsProps) => {
   if (!tags || tags.length === 0) {
-    console.error('No tags provided.')
     return null
   }
 
-  const tag = slug(tags[0]) // Ensure the tag is properly slugged
+  const currentTags = tags.map((t) => slug(t))
 
-  // Merge and filter blogs, stories, and tools based on the slugged tag and exclude the current post
-  const pool = [...allBlogs, ...(allStories || []), ...(allTools || [])]
-  const relatedContent = allCoreContent(
-    sortPosts(
-      pool.filter(
-        (item) =>
-          item.tags && item.tags.map((t) => slug(t)).includes(tag) && item.slug !== currentSlug
-      )
+  // Blog + Tools share the same technical audience, so they can reasonably link
+  // to each other; Stories are a deliberately separate audience and are excluded
+  // (see the Telugu-stories related-content component instead).
+  const pool = [...allBlogs, ...(allTools || [])]
+  const relatedContent = pool
+    .filter((item) => item.slug !== currentSlug && item.draft !== true)
+    .map((item) => {
+      const itemTags = (item.tags || []).map((t) => slug(t))
+      const overlap = itemTags.filter((t) => currentTags.includes(t)).length
+      return { item, overlap }
+    })
+    .filter(({ overlap }) => overlap > 0)
+    .sort(
+      (a, b) =>
+        b.overlap - a.overlap || new Date(b.item.date).getTime() - new Date(a.item.date).getTime()
     )
-  ).slice(0, 5) // Limit to 5 related items
+    .slice(0, MAX_RELATED)
+    .map(({ item }) => item)
 
   if (relatedContent.length === 0) {
-    console.error('No related content found.')
     return null
   }
 

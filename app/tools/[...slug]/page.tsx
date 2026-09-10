@@ -13,6 +13,7 @@ import PostBanner from '@/layouts/PostBanner'
 import { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 
+const twitterHandle = siteMetadata.twitter ? `@${siteMetadata.twitter.split('/').pop()}` : undefined
 const isProduction = process.env.NODE_ENV === 'production'
 const defaultLayout = 'PostLayout'
 const layouts = {
@@ -78,6 +79,8 @@ export async function generateMetadata(props: {
       title: `${tool.title} | ${siteMetadata.title}`,
       description: tool.summary,
       images: imageList,
+      site: twitterHandle,
+      creator: twitterHandle,
     },
   }
 }
@@ -106,6 +109,7 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
   jsonLd['author'] = authorDetails.map((author) => ({
     '@type': 'Person',
     name: author.name,
+    url: `${siteMetadata.siteUrl}/about`,
   }))
   jsonLd['publisher'] = {
     '@type': 'Organization',
@@ -114,6 +118,21 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
       '@type': 'ImageObject',
       url: `${siteMetadata.siteUrl}${siteMetadata.image}`,
     },
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteMetadata.siteUrl },
+      { '@type': 'ListItem', position: 2, name: 'Tools', item: `${siteMetadata.siteUrl}/tools` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: tool.title,
+        item: `${siteMetadata.siteUrl}/${tool.path}`,
+      },
+    ],
   }
 
   const Layout = layouts[tool.layout || defaultLayout]
@@ -134,6 +153,10 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
           />
           <Layout
             content={mainContent}

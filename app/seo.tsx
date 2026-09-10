@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 
+const twitterHandle = siteMetadata.twitter ? `@${siteMetadata.twitter.split('/').pop()}` : undefined
+
 interface PageSEOProps {
   title: string
   description?: string
@@ -39,6 +41,8 @@ export function genPageMetadata({
       title: `${title} | ${siteMetadata.title}`,
       card: 'summary_large_image',
       images: image ? [image] : [siteMetadata.socialBanner],
+      site: twitterHandle,
+      creator: twitterHandle,
     },
     ...rest,
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { adsenseReady } from './AdSense'
 
 declare global {
   interface Window {
@@ -18,6 +19,12 @@ type AdSlotProps = {
   adFormat?: string
 }
 
+// Grace period AFTER an ad has actually been requested (not from component mount)
+// before giving up and collapsing an unfilled slot - long enough for a real
+// ad-serving round trip, short enough to still recover the space for ad-blocker
+// visitors or genuine no-fill responses.
+const FILL_CHECK_DELAY_MS = 4000
+
 export default function AdSlot({
   client = 'ca-pub-9693146779273135',
   slot = '',
@@ -27,8 +34,8 @@ export default function AdSlot({
   enabled = true,
   adFormat,
 }: AdSlotProps) {
-  // Call hooks unconditionally. The effect will early-exit when ads are disabled.
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const [isNearViewport, setIsNearViewport] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [isLighthouse, setIsLighthouse] = useState(false)
   const debug = process.env.NEXT_PUBLIC_ADS_DEBUG_ADS === 'true'
@@ -36,68 +43,99 @@ export default function AdSlot({
   const force = process.env.NEXT_PUBLIC_FORCE_LOAD_ADS === 'true'
   const shouldEnable = enabled && (isProd || force) && !isLighthouse
 
+  // Don't request (or reserve/pay the layout cost of) an ad until the slot is
+  // actually about to be seen - avoids loading inventory a visitor may never
+  // scroll to, which is also the "loaded unnecessarily" case for below-the-fold
+  // placements like the footer/autorelaxed units.
+  useEffect(() => {
+    if (!shouldEnable) return
+    const container = containerRef.current
+    if (!container || typeof IntersectionObserver === 'undefined') {
+      setIsNearViewport(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsNearViewport(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '600px 0px' }
+    )
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [shouldEnable])
+
   useEffect(() => {
     const isBot =
       typeof navigator !== 'undefined' && /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent)
-
     if (isBot) {
       setIsLighthouse(true)
       return
     }
 
-    if (!shouldEnable) {
-      if (debug)
-        console.log('[AdSlot] not enabled (dev). set NEXT_PUBLIC_FORCE_LOAD_ADS=true to override')
+    if (!shouldEnable || !isNearViewport) {
+      if (debug && !isNearViewport) console.log('[AdSlot] waiting until near viewport', { slot })
       return
     }
 
-    if (debug) console.log('[AdSlot] mount', { slot, client })
+    let cancelled = false
+    let mo: MutationObserver | undefined
+    let fillCheckTimeoutId: number | undefined
 
-    try {
-      // Ensure the adsbygoogle global exists and request an ad render.
-      const ads = window.adsbygoogle ?? (window.adsbygoogle = [])
-      ads.push({})
-      if (debug) console.log('[AdSlot] pushed to adsbygoogle', { slot })
-    } catch (e) {
-      // ignore when ads script not present or blocked
-      if (debug) console.warn('[AdSlot] ads push failed', e)
-    }
-
-    const container = containerRef.current
-    if (!container) return
-
-    let timedOut = false
-
-    const checkRendered = () => {
-      // Consider rendered when the container has child nodes (iframe injected) or non-zero height
-      const hasChildren = container.childNodes.length > 0
-      const height = window.getComputedStyle(container).height
-      const visible = hasChildren || (height && height !== '0px')
-      setHidden(!visible)
-      return visible
-    }
-
-    // Observe mutations -- some ad networks inject iframes asynchronously
-    const mo = new MutationObserver(() => {
-      if (checkRendered()) {
-        // If ad appears after being hidden, unhide
-        timedOut = true
+    const requestAd = () => {
+      if (cancelled) return
+      try {
+        const ads = window.adsbygoogle ?? (window.adsbygoogle = [])
+        ads.push({})
+        if (debug) console.log('[AdSlot] pushed to adsbygoogle', { slot })
+      } catch (e) {
+        if (debug) console.warn('[AdSlot] ads push failed', e)
       }
-    })
-    mo.observe(container, { childList: true, subtree: true })
 
-    // After a short timeout, hide the container if nothing rendered
-    const timeoutId = window.setTimeout(() => {
-      timedOut = true
-      checkRendered()
-      if (!checkRendered()) setHidden(true)
-    }, 2500)
+      const container = containerRef.current
+      if (!container) return
+
+      const checkFilled = () => {
+        const hasChildren = container.childNodes.length > 0
+        const height = window.getComputedStyle(container).height
+        return hasChildren || (height && height !== '0px')
+      }
+
+      mo = new MutationObserver(() => {
+        if (checkFilled()) mo?.disconnect()
+      })
+      mo.observe(container, { childList: true, subtree: true })
+
+      fillCheckTimeoutId = window.setTimeout(() => {
+        if (!cancelled && !checkFilled()) setHidden(true)
+      }, FILL_CHECK_DELAY_MS)
+    }
+
+    // The adsbygoogle.js script itself is only requested after the visitor's
+    // first interaction (see AdSense.tsx), so wait for confirmation it has
+    // actually loaded before pushing a request and starting the fill-check clock
+    // - otherwise this races the script and almost always loses.
+    if (adsenseReady.current) {
+      requestAd()
+    } else {
+      const onReady = () => requestAd()
+      window.addEventListener('adsense:ready', onReady, { once: true })
+      return () => {
+        cancelled = true
+        window.removeEventListener('adsense:ready', onReady)
+        mo?.disconnect()
+        if (fillCheckTimeoutId) window.clearTimeout(fillCheckTimeoutId)
+      }
+    }
 
     return () => {
-      mo.disconnect()
-      window.clearTimeout(timeoutId)
+      cancelled = true
+      mo?.disconnect()
+      if (fillCheckTimeoutId) window.clearTimeout(fillCheckTimeoutId)
     }
-  }, [shouldEnable, client, slot, debug])
+  }, [shouldEnable, isNearViewport, client, slot, debug])
 
   if (!enabled || isLighthouse) return null
 

@@ -3,8 +3,15 @@ import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer'
 import { allBlogs } from 'contentlayer/generated'
 import { genPageMetadata } from 'app/seo'
 import { Metadata } from 'next'
+import { aemHubs } from '@/data/aemHubs'
 
 const POSTS_PER_PAGE = 5
+
+const topicHubs = aemHubs.map((hub) => ({
+  slug: hub.slug,
+  title: hub.shortTitle,
+  articleCount: hub.sections.reduce((sum, section) => sum + section.articleSlugs.length, 0),
+}))
 
 export async function generateMetadata(props: {
   params: Promise<{ page: string }>
@@ -47,6 +54,7 @@ export default async function Page(props: { params: Promise<{ page: string }> })
       initialDisplayPosts={initialDisplayPosts}
       pagination={pagination}
       title="All Posts"
+      topicHubs={topicHubs}
     />
   )
 }

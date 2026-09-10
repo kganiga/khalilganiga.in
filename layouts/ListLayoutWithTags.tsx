@@ -32,6 +32,7 @@ interface ListLayoutProps {
   title: string
   initialDisplayPosts?: CoreContent<Blog>[]
   pagination?: PaginationProps
+  topicHubs?: { slug: string; title: string; articleCount: number }[]
 }
 
 function formatTag(tag: string) {
@@ -97,6 +98,7 @@ export default function ListLayoutWithTags({
   title,
   initialDisplayPosts = [],
   pagination,
+  topicHubs,
 }: ListLayoutProps) {
   const pathname = usePathname()
   const [searchValue, setSearchValue] = useState('')
@@ -208,6 +210,29 @@ export default function ListLayoutWithTags({
           )}
         </div>
       </section>
+
+      {topicHubs && topicHubs.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-950 dark:text-white">
+            <BookMarked className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+            Browse by topic
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {topicHubs.map((topicHub) => (
+              <Link key={topicHub.slug} href={`/blog/topics/${topicHub.slug}`}>
+                <Card className="group h-full p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md dark:hover:border-primary-900">
+                  <h3 className="text-base font-semibold text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+                    {topicHub.title}
+                  </h3>
+                  <p className="mt-2 text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                    {topicHub.articleCount} articles
+                  </p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-8 lg:grid-cols-[17rem_1fr]">
         <aside className="lg:sticky lg:top-24 lg:self-start">
