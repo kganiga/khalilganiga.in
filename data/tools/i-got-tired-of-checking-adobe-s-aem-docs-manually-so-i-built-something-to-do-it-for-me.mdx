@@ -1,34 +1,53 @@
 ---
-title: 'I got tired of checking Adobe''s AEM docs manually, so I built something to do it for me'
+title: 'I built a bot that tracks AEM Cloud Service documentation changes (so I don''t have to)'
 date: '2026-09-02'
-tags: ['AEM', 'Adobe Experience Manager', 'AEMaaCS', 'Automation', 'Telegram Bot', 'Productivity', 'Side Project', 'Web Scraping', 'Developer Tools']
+tags: ['AEM', 'AEM Cloud Service', 'Adobe Experience Manager', 'AEMaaCS', 'Experience League', 'Documentation Monitor', 'Telegram Bot', 'Developer Tools', 'AEM Changelog']
 draft: false
-summary: 'A small bot that checks Adobe''s AEM Cloud Service documentation every day and tells you what actually changed, in plain English. Free to join on Telegram or WhatsApp, no spam, just real updates.'
+summary: 'A free bot that checks Adobe Experience Manager Cloud Service documentation daily and reports exactly what changed on Experience League — new pages, removed pages, updated content. Get alerts on Telegram or WhatsApp, no spam.'
 images: []
 layout: PostLayout
 isfeatured: false
 ---
 
-If you work with AEM Cloud Service, you know the drill. Adobe updates their documentation constantly. A new note here, a changed workflow step there, and sometimes a whole section gets rewritten and you find out three weeks later when someone in a meeting mentions something you've never seen.
+Adobe updates AEM Cloud Service documentation constantly, and there's no changelog for it. A workflow step changes, a whole page gets rewritten, and you find out weeks later when someone mentions it in a call and you're staring blankly.
 
-I kept meaning to check the docs regularly. I never did. So I built a bot that does it instead.
+I told myself I'd check the AEM docs every week. Didn't happen. Not once. So I built a bot that checks for me.
 
-It goes through Adobe's AEM Cloud Service documentation every day (Sites docs, developer and implementation docs, all of it) and tells me when a page's content actually changes. Not "something on this page is different," but what changed, in plain English, with a link to go read it yourself if you want the full picture.
+Every day it scans Adobe's AEM Cloud Service documentation on Experience League — Sites docs, developer docs, implementation guides, all of it — and flags what actually changed. Not a diff of the HTML. An actual summary of what's different, in plain language, with a link if you want to read the source.
 
-**How to get updates**
+**Get AEM documentation alerts**
 
-Two ways, take your pick:
+Two ways to subscribe:
 
-- Telegram bot: [t.me/aem\_docs\_monitor\_bot](https://t.me/aem_docs_monitor_bot). Message it `/subscribe` and you're in.  
-    OR
+- Telegram: [t.me/aem_docs_monitor_bot](https://t.me/aem_docs_monitor_bot) — message `/subscribe`
 - WhatsApp: [join the community](https://chat.whatsapp.com/DzRl9nNC3RY9s9ktvzFbYA)
 
-That's it. No sign-up form, no account, nothing to configure.
+No account, no signup form. Just subscribe and you start getting daily scan results.
 
-**No spam.**
+**What the alerts actually look like**
 
-You'll only hear from this when Adobe actually changes something. If nothing changed that day, you won't get a message. I built this because I was annoyed by noise, not to create more of it.
+Telegram:
 
-**Found it useful? Want something added?**
+\`\`\`
+Scan complete — 2026-09-15 14:25 IST
+Checked: 356 | Updated: 0 | Added: 1 | Removed: 0 | Failed: 0
+Added:
+  - https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/opentelemetry-apm-integration
 
-Drop me a line at [admin@khalilganiga.in](mailto:admin@khalilganiga.in). Happy to hear if it's helping, and even happier to hear what you'd want it to do differently.
+💡 Have feedback or questions? Send /feedback <your comments>
+\`\`\`
+
+WhatsApp:
+
+\`\`\`
+Scan complete — 2026-09-15 14:25 IST
+Checked: 356 | Updated: 0 | Added: 1 | Removed: 0 | Failed: 0
+Added:
+  - https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/opentelemetry-apm-integration
+\`\`\`
+
+If nothing changed in the AEM docs that day, you get nothing. No daily "all clear" message, no filler. I built this to kill noise, not add to it.
+
+**Feedback or feature requests**
+
+Email me: [admin@khalilganiga.in](mailto:admin@khalilganiga.in). Tell me what's useful, what's missing, whatever.
