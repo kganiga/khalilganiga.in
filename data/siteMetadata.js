@@ -28,8 +28,9 @@ const siteMetadata = {
     provider: '',
   },
   ads: {
-    // Enable or disable ads site-wide. Default: true
-    enabled: true,
+    // Enable or disable ads site-wide. Set back to true once traffic is high
+    // enough to be worth showing ads again.
+    enabled: false,
     // AdSense publisher client id. Can be overridden via env in production.
     client: process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-9693146779273135',
     // whether to load ads on mobile devices. Keep true to show ads on mobile.
