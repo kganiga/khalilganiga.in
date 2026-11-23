@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Khalil Noesis app</title>
+<meta name="description" content="Download the Khalil Noesis Android app: Khalil Ganiga's Telugu stories, readable offline.">
+<link rel="icon" href="/static/favicons/favicon-32x32.png">
+<style>
+  :root { --bg:#faf7f2; --card:#ffffff; --text:#1f1b16; --muted:#6b6258; --accent:#b4532a; --line:#e8e0d5; --on-accent:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16130f; --card:#211c17; --text:#f2ece4; --muted:#a89d90; --accent:#e58a5c; --line:#3a322a; --on-accent:#1f1208; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Telugu",sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:40px 16px 56px; }
+  header { display:flex; gap:16px; align-items:center; }
+  .mark { width:72px; height:72px; border-radius:18px; flex:none; background:var(--accent); color:var(--on-accent); display:flex;
+          align-items:center; justify-content:center; font:700 26px/1 Georgia,"Times New Roman",serif; letter-spacing:.04em; }
+  h1 { font-size:26px; line-height:1.2; margin:0; letter-spacing:.02em; }
+  .sub { color:var(--muted); margin:4px 0 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-top:24px; }
+  .btn { display:block; text-align:center; background:var(--accent); color:var(--on-accent); text-decoration:none; font-weight:600;
+         padding:14px 18px; border-radius:12px; font-size:17px; }
+  .btn[aria-disabled="true"] { opacity:.5; pointer-events:none; }
+  .meta { color:var(--muted); font-size:14px; margin:10px 0 0; text-align:center; }
+  .notes { margin:16px 0 0; white-space:pre-line; }
+  h2 { font-size:17px; margin:0 0 8px; }
+  ol { margin:0; padding-left:20px; }
+  li { margin:6px 0; }
+  .small { color:var(--muted); font-size:14px; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="mark" aria-hidden="true">KN</div>
+    <div>
+      <h1>KHALIL NOESIS</h1>
+      <p class="sub">Khalil Ganiga's Telugu stories in a reader app for Android. Works offline.</p>
+    </div>
+  </header>
+
+  <section class="card">
+    <a id="dl" class="btn" href="#" aria-disabled="true">Loading…</a>
+    <p id="meta" class="meta">Android 7.0 or newer</p>
+    <p id="notes" class="notes" hidden></p>
+  </section>
+
+  <section class="card">
+    <h2>How to install</h2>
+    <ol>
+      <li>Tap <b>Download</b> and open the file when it finishes.</li>
+      <li>If Android asks, allow your browser to <b>install unknown apps</b>. The app isn't on the Play Store yet, so this step is needed.</li>
+      <li>Tap <b>Install</b>. You only need to do this once: the app will tell you when a new version is out.</li>
+    </ol>
+    <p class="small">Already have it? Install the new version over the old one, and your bookmarks and reading progress are kept.
+      If Android says the app "conflicts with an existing package", you have the very first version (1.0).
+      Uninstall that one once, then install this one.</p>
+  </section>
+
+  <p class="small" style="margin-top:24px;text-align:center"><a href="/stories">Read the stories on the web</a></p>
+</main>
+<script>
+(function () {
+  var dl = document.getElementById('dl'), meta = document.getElementById('meta'), notes = document.getElementById('notes');
+  fetch('/app/version.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (v) {
+      dl.href = v.url;
+      dl.textContent = 'Download version ' + v.versionName;
+      dl.removeAttribute('aria-disabled');
+      meta.textContent = 'Version ' + v.versionName + ' · Android 7.0 or newer';
+      if (v.notes) { notes.textContent = v.notes; notes.hidden = false; }
+    })
+    .catch(function () {
+      dl.textContent = 'Download is unavailable right now';
+      meta.textContent = 'Please try again in a little while.';
+    });
+})();
+</script>
+</body>
+</html>
